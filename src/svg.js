@@ -341,6 +341,7 @@ function renderNote(note, spelled, options) {
     labelMode,
     colorRoles,
     familyId,
+    highlight,
   } = options;
   const x = fretCenterX(note.fret, openNoteX);
   const y = stringY(note.stringIndex);
@@ -348,9 +349,11 @@ function renderNote(note, spelled, options) {
   const label = labelMode === 'degree' && degree
     ? degree
     : spelled?.name ?? chromaticName(note.pc);
-  const inWindow = !shapeWindow || (
-    note.fret >= shapeWindow.start && note.fret <= shapeWindow.end
-  );
+  const inWindow = highlight
+    ? highlight.has(`${note.stringIndex}:${note.fret}`)
+    : (!shapeWindow || (
+      note.fret >= shapeWindow.start && note.fret <= shapeWindow.end
+    ));
   const root = note.pc === options.rootPc;
   const role = colorRoles && spelled
     ? roleClass(spelled.interval, familyId)
@@ -514,6 +517,7 @@ export function renderFretboardSvg({
   labelMode = 'name',
   colorRoles = true,
   notePositions = null,
+  highlightPositions = null,
   headerBadge = null,
 }) {
   const rootPc = collection.root.pc;
@@ -521,6 +525,9 @@ export function renderFretboardSvg({
     labelMode,
     colorRoles,
     familyId: collection.family.id,
+    highlight: highlightPositions
+      ? new Set(highlightPositions.map((note) => `${note.stringIndex}:${note.fret}`))
+      : null,
   };
   const layout = createLayout(maxFret, visual);
   const narrow = layout.width < 1000;

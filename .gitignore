@@ -1,0 +1,7 @@
+node_modules/
+.qa/
+.chrome-shot/
+versions/
+audit/stage/
+audit/*.zip
+output/*-qa.png

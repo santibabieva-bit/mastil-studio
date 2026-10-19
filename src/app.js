@@ -229,12 +229,19 @@ function renderNotePills(collection) {
   }
 }
 
-function updateShapeHint(shape) {
+function updateShapeHint(shape, fingering = null) {
   if (!shape) {
     elements.shapeHint.textContent = state.showCagedOverlay
       ? 'Las cinco formas CAGED sobre el mástil completo, con todas las tónicas en rojo.'
       : 'Mástil completo. El resaltado naranja CAGED está desactivado.';
     elements.summaryPosition.textContent = 'Todas las formas';
+    return;
+  }
+
+  if (fingering) {
+    elements.shapeHint.textContent =
+      `Forma ${shape.id} · digitación de ${fingering.notes.length} notas · máximo 4 trastes por cuerda.`;
+    elements.summaryPosition.textContent = `${shapeSummary(shape)} · digitación`;
     return;
   }
 
@@ -296,7 +303,7 @@ function render({ announce = false } = {}) {
         'No hay un voicing disponible para esta combinación en 15 trastes.';
     }
   } else {
-    updateShapeHint(diagram.shape);
+    updateShapeHint(diagram.shape, diagram.fingering);
     positionText = diagram.shape ? `forma ${diagram.shape.id}` : 'todas las formas';
   }
 

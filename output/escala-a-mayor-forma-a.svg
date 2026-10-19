@@ -266,7 +266,7 @@
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note" transform="translate(591.0345153192095 291)">
+    <g class="note is-context" transform="translate(591.0345153192095 291)">
       
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>

@@ -2,6 +2,7 @@ import { createNoteCollection } from './theory.js';
 import { completeScaleWindow, getAllCagedShapes } from './caged.js';
 import { createLayout, renderFretboardSvg } from './svg.js';
 import { buildRootVoicing } from './voicings.js';
+import { buildScaleFingering } from './fingering.js';
 
 /**
  * Build every piece needed by the preview and the export buttons.
@@ -78,6 +79,9 @@ export function buildDiagram({
   const shape = shapeId === 'all'
     ? null
     : shapes.find((candidate) => candidate.id === shapeId) ?? null;
+  const fingering = shape && collection.family.id === 'scale'
+    ? buildScaleFingering({ shape, notePcs })
+    : null;
   const layout = createLayout(maxFret, visual);
 
   const svg = renderFretboardSvg({
@@ -91,12 +95,14 @@ export function buildDiagram({
     maxFret: layout.maxFret,
     labelMode,
     colorRoles,
+    highlightPositions: fingering?.notes ?? null,
   });
 
   return {
     collection,
     shape,
     shapes,
+    fingering,
     svg,
     includeOpen,
     visual,

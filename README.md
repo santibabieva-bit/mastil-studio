@@ -10,7 +10,13 @@ Prueba funcional `v0.1`. La aplicación web, el motor de teoría, el render SVG 
 
 Lista viva de lo que queda: [PENDIENTES.md](PENDIENTES.md).
 
-El estado anterior a la compactación del mástil y a las cuatríadas quedó guardado como [v1.0](versions/v1.0) y en [mastil-studio-v1.0.zip](versions/mastil-studio-v1.0.zip).
+Versiones guardadas:
+
+- [v1.0](versions/v1.0): antes de compactar el mástil y agregar cuatríadas.
+- [v1.1](versions/v1.1): antes de la nueva lógica de digitaciones.
+- [v1.2](versions/v1.2): digitaciones de 2–3 notas por cuerda.
+
+ZIPs: [v1.0](versions/mastil-studio-v1.0.zip) · [v1.1](versions/mastil-studio-v1.1.zip) · [v1.2](versions/mastil-studio-v1.2.zip).
 
 ## Probar
 
@@ -25,7 +31,7 @@ Abrir `http://127.0.0.1:4173`.
 No hay dependencias de runtime ni proceso de build: el servidor sólo sirve archivos estáticos y el navegador ejecuta módulos ES.
 
 ```bash
-npm test       # 58 pruebas de teoría, parser, CAGED, voicings y SVG
+npm test       # 60 pruebas de teoría, parser, CAGED, voicings, digitaciones y SVG
 npm run export # regenera los SVG de ejemplo en output/
 ```
 
@@ -57,6 +63,8 @@ npm run export # regenera los SVG de ejemplo en output/
   - cuatro notas sobre cuatro cuerdas, sin CAGED;
   - selección de drop y cuerda de la fundamental desde la interfaz.
 - Selector de posición CAGED **C A G E D**:
+  - al elegir una forma en escalas se dibuja una **digitación ergonómica**: grupos de 2–3 notas por cuerda, máximo 4 trastes, con preferencia por Tono+Semitono o Semitono+Tono y Tono+Tono como excepción;
+  - `Todas` sigue mostrando el mapa completo de la escala;
   - el resaltado naranja es **opcional y está apagado por defecto**;
   - con el resaltado activo, `Todas` muestra la guía de ventanas y una forma concreta dibuja el contorno y la etiqueta;
   - sin el resaltado, la forma elegida sigue atenuando el contexto, pero no dibuja naranja.
@@ -83,7 +91,7 @@ Vista rápida de la plantilla completa:
 
 ![Plantilla de escala mayor de A](docs/escala-a-mayor.png)
 
-Forma A abierta, con la ventana ampliada a **0–4**. La mayor usa **C♯** en A/4 y B/2, **F♯** en D/4 y en la 1ª/6ª cuerda al traste 2, y **B** en G/4. No contiene C ni F naturales.
+Forma A anclada a **0–4**: A y D quedan al aire, A aparece en G/2 y se agrega **G♯ en la 1ª cuerda, traste 4**. La digitación usa 2–3 notas por cuerda y no contiene C ni F naturales.
 
 ![Escala mayor de A en forma A](docs/escala-a-mayor-forma-a.png)
 
@@ -108,6 +116,7 @@ server.mjs                 Servidor estático sin dependencias
 src/theory.js              Notas, intervalos, enarmonía y colecciones
 src/parser.js              Consultas en español/inglés
 src/caged.js               Plantillas CAGED, afinación y geometría del mástil
+src/fingering.js           Digitaciones de escala por grupos de 2–3 notas por cuerda
 src/voicings.js            Cuatríadas Drop 2 / Drop 3 en posición fundamental
 src/svg.js                 Render SVG autocontenido
 src/diagram.js             Composición entre teoría, CAGED, voicings y SVG
@@ -161,16 +170,18 @@ const { svg } = buildDiagram({
 - **Cuerdas al aire en voicings.** No cuentan para la extensión de la mano: un voicing como `0-0-0-11` es válido aunque su extensión total supere 5 trastes.
 - **Tipografía de cabecera.** Título y subtítulo se separan dinámicamente cuando `typeScale` crece; el crecimiento del encabezado se limita a 1,4× para no invadir el mástil.
 - **CAGED por ventanas.** Cada forma tiene una ventana de 3–5 trastes y una tónica de referencia. Al elegir una forma se atenúan las notas fuera de la ventana y se resalta la tríada que define esa forma. En la forma E, la ventana se extiende un traste hacia abajo (por ejemplo, 4–7 para La mayor) para incluir la fila que completa el patrón de 2–3 notas por cuerda. Las ventanas se completan además para que ninguna cuerda quede con una sola nota de la escala y para que la unión de notas, ordenada por altura, sea una secuencia continua de grados: si falta una nota entre dos cuerdas, la ventana se extiende hasta incluirla.
+- **Digitación por cuerdas.** Con una forma seleccionada, las escalas se dibujan como un recorrido continuo de grupos de 2–3 notas por cuerda. Cada grupo abarca como máximo 4 trastes y el algoritmo penaliza fuertemente Tono+Tono; `Todas` conserva el mapa completo.
 - **Formas aumentadas y disminuidas.** Como no son formas CAGED tradicionales, se parte de la forma mayor/menor y se ajusta cada nota a la nota de acorde más cercana. Si una cuerda no puede alcanzar una nota del acorde sin un estiramiento excesivo, se omite.
 
 ## Próximos pasos sugeridos
 
-1. Cejilla móvil real: transportar el diagrama según el traste de cejilla.
-2. Traste máximo ajustable con lienzo dinámico (base ya preparada).
-3. Inversiones 1ª, 2ª y 3ª de cuatríadas, más otras octavas y juegos de cuerdas.
-4. Voicings compactos de tríadas por grupos de cuerdas, con overrides manuales.
-5. Lámina con las cinco posiciones CAGED en paneles separados.
-6. Tríada sobre la escala, con la escala como contexto atenuado.
-7. Afinaciones alternativas y modo zurdo.
-8. Exportación PDF y presets de estilo (claro, oscuro, impresión).
-9. Guardar/cargar plantillas por URL o archivo JSON.
+1. **Auditar todas las digitaciones** de escalas, triadas, arpegios y cuatríadas: anclaje CAGED, span mínimo y familias horizontal/diagonal. La forma A de La mayor ya quedó anclada a 0–4 con A/D al aire y G♯ en 1ª/4.
+2. Cejilla móvil real: transportar el diagrama según el traste de cejilla.
+3. Traste máximo ajustable con lienzo dinámico (base ya preparada).
+4. Inversiones 1ª, 2ª y 3ª de cuatríadas, más otras octavas y juegos de cuerdas.
+5. Voicings compactos de tríadas por grupos de cuerdas, con overrides manuales.
+6. Lámina con las cinco posiciones CAGED en paneles separados.
+7. Tríada sobre la escala, con la escala como contexto atenuado.
+8. Afinaciones alternativas y modo zurdo.
+9. Exportación PDF y presets de estilo (claro, oscuro, impresión).
+10. Guardar/cargar plantillas por URL o archivo JSON.
