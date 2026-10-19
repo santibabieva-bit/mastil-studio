@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Generador de plantillas SVG de diapasón con posiciones CAGED, triadas, escalas y arpegios."
+    />
+    <title>Mástil Studio · Plantillas CAGED</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' rx='10' fill='%2317251f'/%3E%3Cpath d='M11 10v24M20 10v24M29 10v24' stroke='%23f6f1e6' stroke-width='1.4' opacity='.65'/%3E%3Cpath d='M7 16h30M7 22h30M7 28h30' stroke='%23f6f1e6' stroke-width='1.4' opacity='.65'/%3E%3Ccircle cx='24' cy='25' r='5' fill='%230f0f0e' stroke='%23df812f' stroke-width='2'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-glow page-glow--one" aria-hidden="true"></div>
+    <div class="page-glow page-glow--two" aria-hidden="true"></div>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./index.html" aria-label="Mástil Studio, inicio">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 44 44" role="presentation">
+              <rect x="5" y="4" width="34" height="36" rx="7" fill="none" stroke="currentColor" stroke-width="1.6" />
+              <path d="M12 11v22M19 11v22M26 11v22M33 11v22" stroke="currentColor" stroke-width="1.1" opacity=".55" />
+              <path d="M8 16h28M8 22h28M8 28h28" stroke="currentColor" stroke-width="1.1" opacity=".55" />
+              <circle cx="21.5" cy="25" r="5.1" fill="currentColor" />
+              <circle cx="21.5" cy="25" r="7.1" fill="none" stroke="var(--orange)" stroke-width="1.8" />
+            </svg>
+          </span>
+          <span class="brand-copy">
+            <span class="brand-name">Mástil <em>Studio</em></span>
+            <span class="brand-tagline">Plantillas CAGED de alta precisión</span>
+          </span>
+        </a>
+        <div class="topbar-meta">
+          <span class="status-pill"><span class="status-dot"></span> Prueba v0.1</span>
+          <span class="topbar-note">SVG vectorial · 15 trastes · afinación estándar</span>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="sidebar" aria-label="Controles de la plantilla">
+          <section class="panel query-panel">
+            <div class="panel-kicker">Entrada rápida</div>
+            <h2>¿Qué querés dibujar?</h2>
+            <form id="query-form" class="query-form">
+              <label class="sr-only" for="query">Consulta musical</label>
+              <input
+                id="query"
+                name="query"
+                type="text"
+                value="Escala A"
+                placeholder="Escala A, Triada C#m, Arpegio G7…"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button class="btn btn-accent" type="submit">
+                Generar
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </button>
+            </form>
+            <div class="example-row" aria-label="Ejemplos">
+              <button type="button" class="example-chip" data-query="Escala A">Escala A</button>
+              <button type="button" class="example-chip" data-query="Triada C#m">Triada C#m</button>
+              <button type="button" class="example-chip" data-query="Arpegio G7">Arpegio G7</button>
+              <button type="button" class="example-chip" data-query="Escala F#m">Escala F#m</button>
+              <button type="button" class="example-chip" data-query="Cuatríada A">Cuatríada A</button>
+            </div>
+            <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+          </section>
+
+          <section class="panel controls-panel">
+            <div class="panel-heading">
+              <h2>Configuración</h2>
+              <button id="reset" class="text-button" type="button">Restablecer</button>
+            </div>
+
+            <div class="field">
+              <label for="root">Raíz</label>
+              <div class="select-wrap">
+                <select id="root"></select>
+                <svg viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1.5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </div>
+            </div>
+
+            <fieldset class="field">
+              <legend>Familia</legend>
+              <div id="family-group" class="segmented segmented--four">
+                <button type="button" data-family="scale" class="is-active">Escala</button>
+                <button type="button" data-family="triad">Triada</button>
+                <button type="button" data-family="arpeggio">Arpegio</button>
+                <button type="button" data-family="cuatriad">Cuatríada</button>
+              </div>
+            </fieldset>
+
+            <div class="field">
+              <label for="quality">Calidad</label>
+              <div class="select-wrap">
+                <select id="quality"></select>
+                <svg viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1.5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </div>
+            </div>
+
+            <fieldset class="field">
+              <legend>Etiquetas de nota</legend>
+              <div id="label-mode-group" class="segmented">
+                <button type="button" data-label-mode="name" class="is-active">Nombre</button>
+                <button type="button" data-label-mode="degree">Grado</button>
+              </div>
+            </fieldset>
+
+            <fieldset id="shape-field" class="field">
+              <legend>Posición CAGED</legend>
+              <div id="shape-group" class="shape-grid">
+                <button type="button" data-shape="all" class="shape-button shape-button--all is-active">
+                  <span class="shape-letter">∞</span>
+                  <span class="shape-caption">Todas</span>
+                </button>
+                <button type="button" data-shape="C" class="shape-button">
+                  <span class="shape-letter">C</span>
+                  <span class="shape-caption">Forma</span>
+                </button>
+                <button type="button" data-shape="A" class="shape-button">
+                  <span class="shape-letter">A</span>
+                  <span class="shape-caption">Forma</span>
+                </button>
+                <button type="button" data-shape="G" class="shape-button">
+                  <span class="shape-letter">G</span>
+                  <span class="shape-caption">Forma</span>
+                </button>
+                <button type="button" data-shape="E" class="shape-button">
+                  <span class="shape-letter">E</span>
+                  <span class="shape-caption">Forma</span>
+                </button>
+                <button type="button" data-shape="D" class="shape-button">
+                  <span class="shape-letter">D</span>
+                  <span class="shape-caption">Forma</span>
+                </button>
+              </div>
+              <p id="shape-hint" class="hint">Las cinco formas CAGED sobre el mástil completo.</p>
+            </fieldset>
+
+            <fieldset id="voicing-field" class="field" hidden>
+              <legend>Voicing de cuatríada</legend>
+              <div id="drop-group" class="segmented segmented--two">
+                <button type="button" data-drop="drop2" class="is-active">Drop 2</button>
+                <button type="button" data-drop="drop3">Drop 3</button>
+              </div>
+              <div class="field voicing-subfield">
+                <label>Fundamental</label>
+                <div id="root-string-group" class="segmented segmented--two">
+                  <button type="button" data-root-string="6" class="is-active">6ª cuerda</button>
+                  <button type="button" data-root-string="5">5ª cuerda</button>
+                </div>
+              </div>
+              <p id="voicing-hint" class="hint">Voicing en fundamental, cuatro cuerdas.</p>
+            </fieldset>
+
+            <fieldset id="strings-field" class="field">
+              <legend>Cuerdas activas</legend>
+              <div id="string-group" class="string-grid">
+                <button type="button" class="string-toggle is-active" data-string="0" aria-pressed="true">
+                  <span class="string-number">1ª</span><span class="string-note">E</span>
+                </button>
+                <button type="button" class="string-toggle is-active" data-string="1" aria-pressed="true">
+                  <span class="string-number">2ª</span><span class="string-note">B</span>
+                </button>
+                <button type="button" class="string-toggle is-active" data-string="2" aria-pressed="true">
+                  <span class="string-number">3ª</span><span class="string-note">G</span>
+                </button>
+                <button type="button" class="string-toggle is-active" data-string="3" aria-pressed="true">
+                  <span class="string-number">4ª</span><span class="string-note">D</span>
+                </button>
+                <button type="button" class="string-toggle is-active" data-string="4" aria-pressed="true">
+                  <span class="string-number">5ª</span><span class="string-note">A</span>
+                </button>
+                <button type="button" class="string-toggle is-active" data-string="5" aria-pressed="true">
+                  <span class="string-number">6ª</span><span class="string-note">E</span>
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset class="field size-field">
+              <legend>Tamaño <span class="legend-note">50–200%</span></legend>
+              <div class="range-row">
+                <div class="range-heading">
+                  <label for="circle-scale">Círculos</label>
+                  <output id="circle-scale-value" for="circle-scale">100%</output>
+                </div>
+                <input id="circle-scale" type="range" min="0.5" max="2" step="0.05" value="1" />
+              </div>
+              <div class="range-row">
+                <div class="range-heading">
+                  <label for="note-text-scale">Nombres de notas</label>
+                  <output id="note-text-scale-value" for="note-text-scale">100%</output>
+                </div>
+                <input id="note-text-scale" type="range" min="0.5" max="2" step="0.05" value="1" />
+              </div>
+              <div class="range-row">
+                <div class="range-heading">
+                  <label for="type-scale">Textos y etiquetas</label>
+                  <output id="type-scale-value" for="type-scale">110%</output>
+                </div>
+                <input id="type-scale" type="range" min="0.5" max="2" step="0.05" value="1.1" />
+              </div>
+              <p class="hint">Se aplica a la vista previa, al SVG y al PNG. Los tamaños altos pueden superponer elementos.</p>
+            </fieldset>
+
+            <label class="switch-row">
+              <input id="color-roles" type="checkbox" checked />
+              <span class="switch" aria-hidden="true"><span></span></span>
+              <span>Colorear 3ª, 5ª y 7ª</span>
+            </label>
+
+            <label id="caged-toggle-row" class="switch-row">
+              <input id="show-caged" type="checkbox" />
+              <span class="switch" aria-hidden="true"><span></span></span>
+              <span>Resaltar CAGED en naranja</span>
+            </label>
+
+            <label id="include-open-row" class="switch-row">
+              <input id="include-open" type="checkbox" checked />
+              <span class="switch" aria-hidden="true"><span></span></span>
+              <span>Mostrar cuerdas al aire</span>
+            </label>
+          </section>
+
+          <section class="panel summary-panel">
+            <div class="panel-heading">
+              <h2>Resumen</h2>
+              <span class="micro-label">EN VIVO</span>
+            </div>
+            <p id="summary-title" class="summary-title">Escala mayor de A</p>
+            <div id="note-pills" class="note-pills" aria-label="Notas de la plantilla"></div>
+            <dl class="summary-grid">
+              <div>
+                <dt>Posición</dt>
+                <dd id="summary-position">Todas las formas</dd>
+              </div>
+              <div>
+                <dt>Colección</dt>
+                <dd id="summary-count">7 notas</dd>
+              </div>
+              <div>
+                <dt>Cejilla</dt>
+                <dd>Al aire</dd>
+              </div>
+            </dl>
+          </section>
+
+          <div class="export-block">
+            <button id="download-svg" class="btn btn-dark" type="button">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0L4.6 6.6M8 10l3.4-3.4M3 12.5h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              Guardar SVG
+            </button>
+            <button id="download-png" class="btn btn-outline" type="button">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.2" y="3" width="11.6" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4" /><circle cx="6" cy="6.5" r="1.2" fill="currentColor" /><path d="m3.5 11 3.1-2.8 2.1 1.8 1.9-1.5 2 2.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              Guardar PNG 2×
+            </button>
+            <p>Al guardar se abre el selector de carpeta de Windows (Chrome/Edge). Si el navegador no lo permite, se descarga en la carpeta de descargas. SVG editable, sin dependencias externas.</p>
+          </div>
+        </aside>
+
+        <section class="preview-panel" aria-label="Vista previa de la plantilla">
+          <div class="preview-topbar">
+            <div>
+              <span class="preview-kicker">Vista previa</span>
+              <strong>Plantilla vectorial</strong>
+            </div>
+            <div class="preview-tools">
+              <span id="preview-size" class="preview-size">1520 × 760</span>
+              <span class="preview-live"><span></span> EN VIVO</span>
+            </div>
+          </div>
+          <div id="canvas" class="canvas" aria-live="polite"></div>
+          <div class="preview-foot">
+            <div class="legend-inline">
+              <span><i class="legend-dot"></i>Nota</span>
+              <span><i class="legend-dot legend-dot--root"></i>Tónica</span>
+              <span id="caged-legend" hidden><i class="legend-outline"></i>CAGED</span>
+            </div>
+            <p id="caged-footnote">La tónica va con borde rojo. El resaltado CAGED naranja está desactivado.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <noscript>
+      <p class="noscript">Mástil Studio necesita JavaScript para generar la plantilla.</p>
+    </noscript>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

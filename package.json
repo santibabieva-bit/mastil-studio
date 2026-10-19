@@ -1,0 +1,15 @@
+{
+  "name": "mastil-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Generador de plantillas SVG de diapasón con posiciones CAGED",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test --test-isolation=none \"tests/*.test.js\"",
+    "export": "node scripts/export-samples.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
