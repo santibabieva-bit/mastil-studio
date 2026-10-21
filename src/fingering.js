@@ -48,9 +48,16 @@ function groupPenalty(group, shape) {
   return penalty;
 }
 
-function groupsForString(string, scaleIndex, pitchSet, shape, padding = 0) {
-  const minFret = Math.max(0, shape.window.start - padding);
-  const maxFret = Math.min(15, shape.window.end + padding);
+function groupsForString(
+  string,
+  scaleIndex,
+  pitchSet,
+  shape,
+  startPadding = 0,
+  endPadding = 0,
+) {
+  const minFret = Math.max(0, shape.window.start - startPadding);
+  const maxFret = Math.min(15, shape.window.end + endPadding);
   const notes = [];
   for (let fret = minFret; fret <= maxFret; fret += 1) {
     const midi = OPEN_MIDI[string.index] + fret;
@@ -94,6 +101,8 @@ function buildScaleFingeringWithPadding({
   shape,
   notePcs,
   padding = 0,
+  startPadding = padding,
+  endPadding = padding,
   anchor = true,
 }) {
   if (!shape) return null;
@@ -101,7 +110,7 @@ function buildScaleFingeringWithPadding({
   const scaleIndex = buildScaleIndex(notePcs);
   const lowToHigh = [...STRINGS].reverse(); // string 6 first
   const groupsByString = lowToHigh.map((string) =>
-    groupsForString(string, scaleIndex, pitchSet, shape, padding),
+    groupsForString(string, scaleIndex, pitchSet, shape, startPadding, endPadding),
   );
 
   if (groupsByString.some((groups) => groups.length === 0)) return null;
@@ -182,6 +191,29 @@ function buildScaleFingeringWithPadding({
 }
 
 export function buildScaleFingering({ shape, notePcs }) {
+  // The upper A position is clipped at fret 15; never expand it backward into
+  // the G position. Only allow a little forward padding if needed.
+  if (shape?.id === 'A' && shape.window.start >= 12) {
+    return buildScaleFingeringWithPadding({
+      shape,
+      notePcs,
+      startPadding: 0,
+      endPadding: 0,
+    })
+      ?? buildScaleFingeringWithPadding({
+        shape,
+        notePcs,
+        startPadding: 0,
+        endPadding: 1,
+      })
+      ?? buildScaleFingeringWithPadding({
+        shape,
+        notePcs,
+        startPadding: 0,
+        endPadding: 2,
+      });
+  }
+
   return buildScaleFingeringWithPadding({ shape, notePcs, padding: 0 })
     ?? buildScaleFingeringWithPadding({ shape, notePcs, padding: 1 })
     ?? buildScaleFingeringWithPadding({ shape, notePcs, padding: 2 })

@@ -118,11 +118,11 @@
     <line x1="118" y1="210" x2="1422" y2="210" stroke="#d9cfbc" stroke-width="1" opacity="0.65" />
     <line x1="118" y1="438" x2="1422" y2="438" stroke="#d9cfbc" stroke-width="1" opacity="0.65" />
     
-      <g class="shape-tag" transform="translate(438.8488689647344 190)">
+      <g class="shape-tag" transform="translate(1299.6784557155872 190)">
         <rect x="-52" y="-14" width="104" height="28" rx="14" />
         <text text-anchor="middle" dominant-baseline="central">FORMA A</text>
       </g>
-    <path class="shape-hull" d="M 165 226.5 C 165.65 195.99, 166.19 217.21, 168.62 213 C 171.05 208.79, 174.29 205.55, 178.5 203.12 C 182.71 200.69, 154.92 193.13, 192 199.5 C 229.08 205.87, 347.41 230.83, 384.49 238.5 C 421.56 246.17, 393.78 239.69, 397.99 242.12 C 402.2 244.55, 405.44 247.79, 407.87 252 C 410.3 256.21, 410.84 249.03, 411.49 265.5 C 412.14 281.97, 412.14 327.03, 411.49 343.5 C 410.84 359.97, 410.3 352.79, 407.87 357 C 405.44 361.21, 402.2 364.45, 397.99 366.88 C 393.78 369.31, 421.56 362.83, 384.49 370.5 C 347.41 378.17, 229.08 403.13, 192 409.5 C 154.92 415.87, 182.71 408.31, 178.5 405.88 C 174.29 403.45, 171.05 400.21, 168.62 396 C 166.19 391.79, 165.65 413.01, 165 382.5 C 164.35 351.99, 164.35 257.01, 165 226.5 Z" />
+    <path class="shape-hull" d="M 1188.15 226.5 C 1188.81 195.99, 1189.34 217.21, 1191.77 213 C 1194.2 208.79, 1197.45 205.55, 1201.65 203.12 C 1205.86 200.69, 1210.29 199.5, 1215.15 199.5 C 1220.01 199.5, 1205.36 195.45, 1228.65 203.12 C 1251.95 210.79, 1321.93 233.32, 1344.58 242.12 C 1367.22 250.92, 1352.03 247.79, 1354.46 252 C 1356.89 256.21, 1357.42 249.03, 1358.08 265.5 C 1358.73 281.97, 1358.73 327.03, 1358.08 343.5 C 1357.42 359.97, 1356.89 352.79, 1354.46 357 C 1352.03 361.21, 1367.22 358.08, 1344.58 366.88 C 1321.93 375.68, 1251.95 398.21, 1228.65 405.88 C 1205.36 413.55, 1220.01 409.5, 1215.15 409.5 C 1210.29 409.5, 1205.86 408.31, 1201.65 405.88 C 1197.45 403.45, 1194.2 400.21, 1191.77 396 C 1189.34 391.79, 1188.81 413.01, 1188.15 382.5 C 1187.5 351.99, 1187.5 257.01, 1188.15 226.5 Z" />
     
     <g class="note is-context" transform="translate(192 226.5)">
       <circle class="note-halo" r="17.4" />
@@ -136,37 +136,37 @@
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note" transform="translate(192 343.5)">
+    <g class="note is-context" transform="translate(192 343.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note is-root" transform="translate(192 382.5)">
+    <g class="note is-root is-context" transform="translate(192 382.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note" transform="translate(192 421.5)">
+    <g class="note is-context" transform="translate(192 421.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
     
-    <g class="note" transform="translate(384.48644981984387 226.5)">
+    <g class="note is-context" transform="translate(384.48644981984387 226.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note" transform="translate(591.0345153192095 226.5)">
+    <g class="note is-context" transform="translate(591.0345153192095 226.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
     </g>
 
-    <g class="note is-root" transform="translate(685.6977379294688 226.5)">
+    <g class="note is-root is-context" transform="translate(685.6977379294688 226.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
@@ -190,31 +190,31 @@
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note is-context" transform="translate(1215.1538958592287 226.5)">
+    <g class="note" transform="translate(1215.1538958592287 226.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note is-context" transform="translate(1331.075078196607 226.5)">
+    <g class="note" transform="translate(1331.075078196607 226.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note" transform="translate(384.48644981984387 265.5)">
+    <g class="note is-context" transform="translate(384.48644981984387 265.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
     </g>
 
-    <g class="note" transform="translate(490.74232457052165 265.5)">
+    <g class="note is-context" transform="translate(490.74232457052165 265.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note" transform="translate(685.6977379294688 265.5)">
+    <g class="note is-context" transform="translate(685.6977379294688 265.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
@@ -238,37 +238,37 @@
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note is-context" transform="translate(1215.1538958592287 265.5)">
+    <g class="note" transform="translate(1215.1538958592287 265.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note is-context" transform="translate(1331.075078196607 265.5)">
+    <g class="note" transform="translate(1331.075078196607 265.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
     </g>
 
-    <g class="note is-context" transform="translate(1384.2030155719458 265.5)">
+    <g class="note" transform="translate(1384.2030155719458 265.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note" transform="translate(271.9122719626372 304.5)">
+    <g class="note is-context" transform="translate(271.9122719626372 304.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
     </g>
 
-    <g class="note is-root" transform="translate(384.48644981984387 304.5)">
+    <g class="note is-root is-context" transform="translate(384.48644981984387 304.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note" transform="translate(591.0345153192095 304.5)">
+    <g class="note is-context" transform="translate(591.0345153192095 304.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
@@ -298,25 +298,25 @@
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note is-context" transform="translate(1274.7879892680035 304.5)">
+    <g class="note" transform="translate(1274.7879892680035 304.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
     </g>
 
-    <g class="note is-root is-context" transform="translate(1331.075078196607 304.5)">
+    <g class="note is-root" transform="translate(1331.075078196607 304.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note" transform="translate(384.48644981984387 343.5)">
+    <g class="note is-context" transform="translate(384.48644981984387 343.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note" transform="translate(591.0345153192095 343.5)">
+    <g class="note is-context" transform="translate(591.0345153192095 343.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
@@ -346,25 +346,25 @@
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
     </g>
 
-    <g class="note is-context" transform="translate(1215.1538958592287 343.5)">
+    <g class="note" transform="translate(1215.1538958592287 343.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note is-context" transform="translate(1331.075078196607 343.5)">
+    <g class="note" transform="translate(1331.075078196607 343.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note" transform="translate(384.48644981984387 382.5)">
+    <g class="note is-context" transform="translate(384.48644981984387 382.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note" transform="translate(591.0345153192095 382.5)">
+    <g class="note is-context" transform="translate(591.0345153192095 382.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
@@ -394,25 +394,25 @@
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
     </g>
 
-    <g class="note is-root is-context" transform="translate(1215.1538958592287 382.5)">
+    <g class="note is-root" transform="translate(1215.1538958592287 382.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note is-context" transform="translate(1331.075078196607 382.5)">
+    <g class="note" transform="translate(1331.075078196607 382.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note" transform="translate(384.48644981984387 421.5)">
+    <g class="note is-context" transform="translate(384.48644981984387 421.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note" transform="translate(591.0345153192095 421.5)">
+    <g class="note is-context" transform="translate(591.0345153192095 421.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
@@ -442,13 +442,13 @@
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note is-context" transform="translate(1215.1538958592287 421.5)">
+    <g class="note" transform="translate(1215.1538958592287 421.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note is-context" transform="translate(1331.075078196607 421.5)">
+    <g class="note" transform="translate(1331.075078196607 421.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>

@@ -31,7 +31,11 @@ function buildAllFingerings() {
 
 test('fingerings use 2–3 notes per string, at most 4 frets, without gaps', () => {
   for (const { label, fingering } of buildAllFingerings()) {
-    assert.ok(fingering, `${label}: no fingering`);
+    if (!fingering) {
+      // The upper A position is clipped at fret 15 and is rendered as a map.
+      assert.ok(label.startsWith('A/') && label.endsWith('/pc9'), `${label}: no fingering`);
+      continue;
+    }
     assert.equal(fingering.groups.length, 6, `${label}: should cover six strings`);
 
     let previous = null;
@@ -57,20 +61,13 @@ test('fingerings use 2–3 notes per string, at most 4 frets, without gaps', () 
   }
 });
 
-test('A major A shape keeps open A/D and adds G-sharp on the first string', () => {
+test('A major A shape uses the upper octave and stays out of G', () => {
   const pcs = [9, 11, 1, 2, 4, 6, 8];
   const shape = completeScaleWindow(getCagedShape('A', 9, 'major'), pcs);
   const fingering = buildScaleFingering({ shape, notePcs: pcs });
 
-  assert.ok(fingering);
-  assert.deepEqual(shape.window, { start: 0, end: 5 });
-  assert.equal(fingering.groups[0].notes[0].fret, 0);
-
-  const positions = new Set(
-    fingering.notes.map((note) => `${note.stringIndex}:${note.fret}`),
-  );
-  assert.ok(positions.has('4:0'), 'A open on the 5th string');
-  assert.ok(positions.has('3:0'), 'D open on the 4th string');
-  assert.ok(positions.has('2:2'), 'A on the 3rd string, fret 2');
-  assert.ok(positions.has('0:4'), 'G♯ on the 1st string, fret 4');
+  assert.deepEqual(shape.window, { start: 12, end: 15 });
+  // The upper A position is clipped at fret 15; it intentionally falls back
+  // to the map instead of expanding backward into the G position.
+  assert.equal(fingering, null);
 });

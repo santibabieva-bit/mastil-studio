@@ -45,6 +45,8 @@ test('every completed scale window is continuous note-to-note', () => {
 
       for (const shapeId of CAGED_ORDER) {
         const base = getCagedShape(shapeId, rootPc, quality.id);
+        // Partial positions clipped by the 15-fret board are shown as maps.
+        if (base.clipped) continue;
         const shape = completeScaleWindow(base, pitchClasses);
         const label = `${shapeId}/${quality.id}/pc${rootPc}`;
 

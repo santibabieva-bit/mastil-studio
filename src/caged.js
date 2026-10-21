@@ -124,7 +124,12 @@ function anchorFret(shapeId, rootPc) {
   }
 
   if (shapeId === 'A') {
-    return rootFretOnString(rootPc, 9);
+    const fret = rootFretOnString(rootPc, 9);
+    // The low A position (open strings) occupies the same frets as the G
+    // position. Use the next octave (A/12) so the CAGED positions do not
+    // overlap; the position is clipped by the 15-fret board.
+    if (rootPc === 9 && fret === 0) return 12;
+    return fret;
   }
 
   if (shapeId === 'G') {
@@ -254,6 +259,7 @@ export function getCagedShape(shapeId, rootPc, quality = 'major') {
       start: windowStart,
       end: windowEnd,
     },
+    clipped: windowStartFret < 0 || windowEndFret > 15,
     fretSpan: [minFret, maxFret],
   };
 }
@@ -278,6 +284,10 @@ export function completeScaleWindow(
   { minPerString = 2, maxFret = 15, maxSpan = 6 } = {},
 ) {
   const pitchSet = new Set(notePcs.map((pc) => mod(pc, 12)));
+  // The upper A position starts at A/12 on the 5th string and is clipped by
+  // the 15-fret board. Do not expand it back toward C/G: that would overlap
+  // the G position and defeat the purpose of moving A up an octave.
+  const preserveStart = shape.id === 'A' && shape.window.start >= 12;
   let start = shape.window.start;
   let end = shape.window.end;
 
@@ -309,7 +319,7 @@ export function completeScaleWindow(
     };
 
     const endScore = end < maxFret ? scoreSide(end + 1) : null;
-    const startScore = start > 0 ? scoreSide(start - 1) : null;
+    const startScore = start > 0 && !preserveStart ? scoreSide(start - 1) : null;
 
     const candidates = [
       endScore ? { side: 'end', ...endScore } : null,
@@ -383,7 +393,7 @@ export function completeScaleWindow(
         added: addedAt(end + 1),
       });
     }
-    if (start > 0) {
+    if (start > 0 && !preserveStart) {
       candidates.push({
         side: 'start',
         gaps: gapCount(start - 1, end),
