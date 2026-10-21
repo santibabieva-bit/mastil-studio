@@ -52,7 +52,22 @@ test('the five major shapes around A major are distinct CAGED positions', () => 
   }
 });
 
-test('A major CAGED positions have 2 or 3 scale notes on every string', () => {
+test('A major CAGED windows follow the anchored definitions', () => {
+  const expected = {
+    C: { start: 9, end: 12 },
+    A: { start: 0, end: 5 },
+    G: { start: 1, end: 5 },
+    E: { start: 4, end: 7 },
+    D: { start: 6, end: 10 },
+  };
+
+  for (const shapeId of CAGED_ORDER) {
+    const shape = getCagedShape(shapeId, 9, 'major');
+    assert.deepEqual(shape.window, expected[shapeId], `${shapeId} window`);
+  }
+});
+
+test('A major CAGED positions have 2 to 4 scale notes on every string', () => {
   const collection = createNoteCollection('A', 'scale', 'major');
   const pcs = new Set(collection.notes.map((note) => note.pc));
 
@@ -67,11 +82,11 @@ test('A major CAGED positions have 2 or 3 scale notes on every string', () => {
     });
 
     assert.ok(
-      counts.every((count) => count >= 2 && count <= 3),
-      `${shapeId} should have 2–3 notes per string, got ${counts.join(',')}`,
+      counts.every((count) => count >= 2 && count <= 4),
+      `${shapeId} should have 2–4 notes per string, got ${counts.join(',')}`,
     );
     assert.ok(
-      counts.some((count) => count === 3),
+      counts.some((count) => count >= 3),
       `${shapeId} should include at least one three-note string`,
     );
   }

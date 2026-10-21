@@ -12,12 +12,12 @@ import { chromaticName, mod } from './theory.js';
 
 export const CANVAS = {
   width: 1520,
-  height: 540,
+  height: 578,
   board: {
     left: 100,
     right: 1440,
     top: 210,
-    bottom: 400,
+    bottom: 438,
   },
   // The open-string dots sit almost against the capo. The exact x is
   // recomputed from the note radius in computeVisualGeometry().
@@ -25,20 +25,20 @@ export const CANVAS = {
   nutX: 214,
   fretCount: 15,
   fretboardRight: 1410,
-  stringTop: 226,
-  stringGap: 32.5,
+  stringTop: 226.5,
+  stringGap: 39,
   noteRadius: 14,
   capoWidth: 13,
   marker: {
     singleRadius: 9.6,
     doubleRadius: 9.2,
-    doubleGap: 32.5,
+    doubleGap: 39,
     bassOffset: 1,
   },
   shapeTagY: 190,
-  fretNumberY: 434,
-  footerLineY: 472,
-  footerTextY: 500,
+  fretNumberY: 472,
+  footerLineY: 510,
+  footerTextY: 538,
 };
 
 const DEFAULT_VISUAL = {
@@ -114,11 +114,12 @@ const COLORS = {
   ink: '#17231e',
   inkSoft: '#4c574f',
   inkMuted: '#7d857d',
-  board: '#e9e1d1',
-  boardEdge: '#d2c6b2',
+  board: '#faf7f0',
+  boardEdge: '#d9cfbc',
   string: '#2a2924',
   fret: '#a89b87',
   fretStrong: '#857967',
+  inlay: '#bda57f',
   note: '#141412',
   noteBorder: '#fbf7ef',
   root: '#d84a3e',
@@ -338,6 +339,7 @@ function renderNote(note, spelled, options) {
     noteRadius,
     openNoteX,
     noteTextScale,
+    circleScale,
     labelMode,
     colorRoles,
     familyId,
@@ -364,9 +366,15 @@ function renderNote(note, spelled, options) {
   if (role) classes.push(role);
   if (!inWindow) classes.push('is-context');
 
+  // Every note carries a second, outer ring. The tonic keeps the thick red
+  // version; the rest of the notes get a slim ring in their role color (or a
+  // neutral gray) so the double edge reads as a whisper next to the tonic.
+  const ringScale = circleScale ?? 1;
+  const haloRadius = formatNumber(noteRadius + (root ? 4.2 : 3.4) * ringScale);
+
   return `
     <g class="${classes.join(' ')}" transform="translate(${x} ${y})">
-      ${root ? `<circle class="root-halo" r="${formatNumber(noteRadius + 4.2)}" />` : ''}
+      <circle class="${root ? 'root-halo' : 'note-halo'}" r="${haloRadius}" />
       <circle class="note-disc" r="${formatNumber(noteRadius)}" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="${noteLabelSize(noteTextScale)}">${escapeXml(label)}</text>
     </g>`;
@@ -645,16 +653,19 @@ export function renderFretboardSvg({
   const roleLegend = colorRoles
     ? `
     <g transform="translate(${roleLegendXs[0]} ${CANVAS.footerTextY})">
+      <circle class="legend-halo legend-halo--third" cx="0" cy="0" r="13.2" />
       <circle cx="0" cy="0" r="10" fill="${COLORS.note}" stroke="${COLORS.roleThird}" stroke-width="3.2" />
-      <text class="legend-text" x="18" y="4">3ª</text>
+      <text class="legend-text" x="21" y="4">3ª</text>
     </g>
     <g transform="translate(${roleLegendXs[1]} ${CANVAS.footerTextY})">
+      <circle class="legend-halo legend-halo--fifth" cx="0" cy="0" r="13.2" />
       <circle cx="0" cy="0" r="10" fill="${COLORS.note}" stroke="${COLORS.roleFifth}" stroke-width="3.2" />
-      <text class="legend-text" x="18" y="4">5ª</text>
+      <text class="legend-text" x="21" y="4">5ª</text>
     </g>
     <g transform="translate(${roleLegendXs[2]} ${CANVAS.footerTextY})">
+      <circle class="legend-halo legend-halo--seventh" cx="0" cy="0" r="13.2" />
       <circle cx="0" cy="0" r="10" fill="${COLORS.note}" stroke="${COLORS.roleSeventh}" stroke-width="3.2" />
-      <text class="legend-text" x="18" y="4">7ª</text>
+      <text class="legend-text" x="21" y="4">7ª</text>
     </g>`
     : '';
   const cagedLegendX = narrow ? 455 : colorRoles ? 760 : 455;
@@ -669,20 +680,15 @@ export function renderFretboardSvg({
       <stop offset="1" stop-color="${COLORS.paperDeep}" />
     </linearGradient>
     <linearGradient id="board" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#eee7d9" />
+      <stop offset="0" stop-color="#ffffff" />
       <stop offset="0.5" stop-color="${COLORS.board}" />
-      <stop offset="1" stop-color="#e3d9c7" />
+      <stop offset="1" stop-color="#f4eee2" />
     </linearGradient>
     <linearGradient id="capo" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#0f1210" />
       <stop offset="0.34" stop-color="#333630" />
       <stop offset="1" stop-color="#101310" />
     </linearGradient>
-    <radialGradient id="inlay-clay" cx="35%" cy="28%" r="74%">
-      <stop offset="0" stop-color="#d9c6a7" />
-      <stop offset="0.62" stop-color="#bda57f" />
-      <stop offset="1" stop-color="#947753" />
-    </radialGradient>
     <filter id="board-shadow" x="-10%" y="-20%" width="120%" height="150%">
       <feDropShadow dx="0" dy="8" stdDeviation="11" flood-color="#4a3c27" flood-opacity="0.15" />
     </filter>
@@ -702,8 +708,7 @@ export function renderFretboardSvg({
       .string--inactive { opacity: 0.16; }
       .fret { stroke: ${COLORS.fret}; stroke-width: 1.5; }
       .fret-twelfth { stroke: ${COLORS.fretStrong}; stroke-width: 2.2; }
-      .fret-marker { fill: url(#inlay-clay); stroke: #8d7350; stroke-width: 0.9; opacity: 0.24; }
-      .fret-marker--double { opacity: 0.2; }
+      .fret-marker { fill: ${COLORS.inlay}; stroke: none; opacity: 0.38; }
       .fret-number { font-family: "Segoe UI", Arial, sans-serif; font-size: ${fs(16)}px; font-weight: 600; fill: ${COLORS.inkMuted}; letter-spacing: 0.5px; }
       .string-label text { font-family: "Segoe UI", Arial, sans-serif; font-size: ${fs(14)}px; font-weight: 700; fill: ${COLORS.inkMuted}; letter-spacing: 0.5px; }
       .capo { fill: url(#capo); }
@@ -712,11 +717,15 @@ export function renderFretboardSvg({
       .note-disc { fill: ${COLORS.note}; stroke: ${COLORS.noteBorder}; stroke-width: 1; }
       .note-label { font-family: "Segoe UI", Arial, sans-serif; font-weight: 800; fill: #fffdf8; letter-spacing: -0.2px; }
       .root-halo { fill: none; stroke: ${COLORS.root}; stroke-width: 2; opacity: 0.2; }
+      .note-halo { fill: none; stroke: ${COLORS.inkMuted}; stroke-width: 1.2; opacity: 0.32; }
       .is-root .note-disc { stroke: ${COLORS.root}; stroke-width: 3.2; }
       .is-root .note-label { fill: #fff; }
       .role-third .note-disc { stroke: ${COLORS.roleThird}; stroke-width: 2.4; }
       .role-fifth .note-disc { stroke: ${COLORS.roleFifth}; stroke-width: 2.4; }
       .role-seventh .note-disc { stroke: ${COLORS.roleSeventh}; stroke-width: 2.4; }
+      .role-third .note-halo { stroke: ${COLORS.roleThird}; }
+      .role-fifth .note-halo { stroke: ${COLORS.roleFifth}; }
+      .role-seventh .note-halo { stroke: ${COLORS.roleSeventh}; }
       .note.is-context { opacity: 0.14; }
       .shape-hull { fill: ${COLORS.orange}; fill-opacity: 0.08; stroke: ${COLORS.orange}; stroke-width: 4.3; stroke-linejoin: round; }
       .shape-tag rect { fill: #fffaf0; stroke: ${COLORS.orange}; stroke-width: 1.5; }
@@ -725,6 +734,10 @@ export function renderFretboardSvg({
       .shape-tag--all text { font-size: ${fs(9)}px; letter-spacing: 0.9px; fill: ${COLORS.inkSoft}; }
       .legend-text { font-family: "Segoe UI", Arial, sans-serif; font-size: ${fs(12)}px; font-weight: 600; fill: ${COLORS.inkSoft}; }
       .legend-strong { font-weight: 800; fill: ${COLORS.ink}; }
+      .legend-halo { fill: none; stroke: ${COLORS.inkMuted}; stroke-width: 1.2; opacity: 0.32; }
+      .legend-halo--third { stroke: ${COLORS.roleThird}; }
+      .legend-halo--fifth { stroke: ${COLORS.roleFifth}; }
+      .legend-halo--seventh { stroke: ${COLORS.roleSeventh}; }
       .footer-mark { font-family: Georgia, "Times New Roman", serif; font-size: ${fs(15)}px; font-weight: 700; fill: ${COLORS.ink}; letter-spacing: 0.2px; }
     </style>
   </defs>
@@ -773,12 +786,14 @@ export function renderFretboardSvg({
   <g class="footer">
     <line x1="${footerX}" y1="${CANVAS.footerLineY}" x2="${layout.width - footerX}" y2="${CANVAS.footerLineY}" stroke="${COLORS.boardEdge}" stroke-width="1" />
     <g transform="translate(${noteLegendX} ${CANVAS.footerTextY})">
-      <circle cx="0" cy="0" r="10" fill="${COLORS.note}" />
-      <text class="legend-text" x="19" y="4">${narrow ? 'Nota' : `Nota de la <tspan class="legend-strong">${familyNoun}</tspan>`}</text>
+      <circle class="legend-halo" cx="0" cy="0" r="13.2" />
+      <circle cx="0" cy="0" r="10" fill="${COLORS.note}" stroke="${COLORS.noteBorder}" stroke-width="1" />
+      <text class="legend-text" x="22" y="4">${narrow ? 'Nota' : `Nota de la <tspan class="legend-strong">${familyNoun}</tspan>`}</text>
     </g>
     <g transform="translate(${rootLegendX} ${CANVAS.footerTextY})">
+      <circle cx="0" cy="0" r="13.2" fill="none" stroke="${COLORS.root}" stroke-width="2" opacity="0.2" />
       <circle cx="0" cy="0" r="10" fill="${COLORS.note}" stroke="${COLORS.root}" stroke-width="3.4" />
-      <text class="legend-text" x="19" y="4"><tspan class="legend-strong">Tónica</tspan>${narrow ? '' : ' resaltada'}</text>
+      <text class="legend-text" x="22" y="4"><tspan class="legend-strong">Tónica</tspan>${narrow ? '' : ' resaltada'}</text>
     </g>
     ${roleLegend}
     ${

@@ -1066,10 +1066,12 @@ select:focus-visible {
   background: #171614;
   border: 1px solid #d9cebb;
   border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(249, 244, 231, 0.16);
 }
 
 .legend-dot--root {
   border: 2.5px solid var(--red);
+  box-shadow: 0 0 0 2px rgba(216, 74, 62, 0.26);
 }
 
 .legend-outline {

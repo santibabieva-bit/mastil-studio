@@ -21,7 +21,7 @@ test('all-positions SVG is standalone and omits the CAGED overlay by default', (
   assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
   assert.match(svg, /<title id="dsh-title">Escala mayor de A<\/title>/);
   assert.match(svg, /CAGED · TODAS/);
-  assert.doesNotMatch(svg, /A · 0–4/);
+  assert.doesNotMatch(svg, /A · 0–5/);
   assert.doesNotMatch(svg, /C · 9–12/);
   assert.doesNotMatch(svg, /<path class="shape-hull"/);
   assert.match(svg, /class="note is-root"/);
@@ -40,7 +40,7 @@ test('the CAGED overlay is optional and includes rail tags when enabled', () => 
     showCagedOverlay: true,
   });
 
-  assert.match(svg, /A · 0–4/);
+  assert.match(svg, /A · 0–5/);
   assert.match(svg, /C · 9–12/);
   assert.match(svg, /Posiciones CAGED/);
 });
@@ -106,10 +106,10 @@ test('a triad produces exactly three pitch-class pills worth of notes', () => {
   assert.match(svg, /G♯/);
 });
 
-test('compact neck keeps 50% of the original board height', () => {
-  assert.equal(CANVAS.board.bottom - CANVAS.board.top, 190);
+test('neck is 20% taller than the compact version', () => {
+  assert.equal(CANVAS.board.bottom - CANVAS.board.top, 228);
   assert.equal(CANVAS.width, 1520);
-  assert.equal(CANVAS.height, 540);
+  assert.equal(CANVAS.height, 578);
 });
 
 test('real fret spacing narrows toward the body', () => {
@@ -138,7 +138,7 @@ test('open-string dots sit almost against the capo at every circle size', () => 
   }
 });
 
-test('fret markers are large and the 12th fret has two of them', () => {
+test('fret markers are flat and the 12th fret has two of them', () => {
   const { svg } = buildDiagram({
     root: 'A',
     family: 'scale',
@@ -148,8 +148,44 @@ test('fret markers are large and the 12th fret has two of them', () => {
   assert.match(svg, /class="fret-marker" cx="[^"]+" cy="[^"]+" r="9.6"/);
   assert.equal((svg.match(/class="fret-marker fret-marker--double"/g) ?? []).length, 2);
   assert.equal((svg.match(/r="9.2"/g) ?? []).length, 2);
-  assert.match(svg, /\.fret-marker \{[^}]*opacity: 0\.24/);
-  assert.match(svg, /\.fret-marker--double \{ opacity: 0\.2/);
+  // Flat inlay: one solid clay tone, no gradient, no volume shading.
+  assert.match(svg, /\.fret-marker \{[^}]*fill: #bda57f/);
+  assert.match(svg, /\.fret-marker \{[^}]*stroke: none/);
+  assert.match(svg, /\.fret-marker \{[^}]*opacity: 0\.38/);
+  assert.doesNotMatch(svg, /inlay-clay/);
+  assert.doesNotMatch(svg, /\.fret-marker--double \{/);
+});
+
+test('every note gets a second ring: red for tonics and discreet for the rest', () => {
+  const { svg } = buildDiagram({
+    root: 'A',
+    family: 'scale',
+    quality: 'major',
+  });
+
+  const noteGroups = (svg.match(/<g class="note[^"]*" transform=/g) ?? []).length;
+  const halos = (svg.match(/class="(?:root-halo|note-halo)"/g) ?? []).length;
+  assert.ok(noteGroups > 0);
+  assert.equal(halos, noteGroups);
+
+  assert.match(svg, /class="note-halo" r="17\.4"/);
+  assert.match(svg, /class="root-halo" r="18\.2"/);
+  assert.match(svg, /\.note-halo \{[^}]*stroke-width: 1\.2[^}]*opacity: 0\.32/);
+  assert.match(svg, /\.root-halo \{[^}]*stroke-width: 2[^}]*opacity: 0\.2/);
+  assert.match(svg, /class="legend-halo"/);
+});
+
+test('the outer note ring grows with the circle scale', () => {
+  const large = buildDiagram({
+    root: 'A',
+    family: 'scale',
+    quality: 'major',
+    visual: { circleScale: 2 },
+  }).svg;
+
+  assert.match(large, /class="note-disc" r="28"/);
+  assert.match(large, /class="note-halo" r="34\.8"/);
+  assert.match(large, /class="root-halo" r="36\.4"/);
 });
 
 test('header lines stay separated at 200% type scale', () => {
@@ -244,9 +280,9 @@ test('inactive strings have no notes and a dimmed line', () => {
     activeStrings: [true, false, true, true, true, true],
   });
 
-  assert.match(svg, /class="string string--inactive" x1="100" y1="258.5"/);
-  // No note circle on the 2nd string (y=258.5).
-  assert.doesNotMatch(svg, /translate\([^ ]+ 258\.5\)/);
+  assert.match(svg, /class="string string--inactive" x1="100" y1="265.5"/);
+  // No note circle on the 2nd string (y=265.5).
+  assert.doesNotMatch(svg, /translate\([^ ]+ 265\.5\)/);
 });
 
 test('A minor pentatonic C shape marks the linking C on B/13', () => {
@@ -260,7 +296,7 @@ test('A minor pentatonic C shape marks the linking C on B/13', () => {
   assert.deepEqual(diagram.shape.window, { start: 9, end: 13 });
 
   const groups = [...diagram.svg.matchAll(
-    /<g class="([^"]*)" transform="translate\(([^ ]+) 258\.5\)">([\s\S]*?)<\/g>/g,
+    /<g class="([^"]*)" transform="translate\(([^ ]+) 265\.5\)">([\s\S]*?)<\/g>/g,
   )];
   const cGroup = groups.find((group) => {
     const x = Number(group[2]);
@@ -320,7 +356,7 @@ test('A major A-shape includes C-sharp and F-sharp', () => {
     colorRoles: false,
   });
 
-  assert.deepEqual(diagram.shape.window, { start: 0, end: 4 });
+  assert.deepEqual(diagram.shape.window, { start: 0, end: 5 });
   const labels = [...diagram.svg.matchAll(/class="note-label"[^>]*>([^<]+)<\/text>/g)]
     .map((match) => match[1]);
   assert.ok(labels.includes('C♯'));

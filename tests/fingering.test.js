@@ -63,7 +63,7 @@ test('A major A shape keeps open A/D and adds G-sharp on the first string', () =
   const fingering = buildScaleFingering({ shape, notePcs: pcs });
 
   assert.ok(fingering);
-  assert.deepEqual(shape.window, { start: 0, end: 4 });
+  assert.deepEqual(shape.window, { start: 0, end: 5 });
   assert.equal(fingering.groups[0].notes[0].fret, 0);
 
   const positions = new Set(

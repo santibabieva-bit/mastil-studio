@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="540" viewBox="0 0 1520 540" role="img" aria-labelledby="dsh-title dsh-desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="578" viewBox="0 0 1520 578" role="img" aria-labelledby="dsh-title dsh-desc">
   <title id="dsh-title">Escala mayor de A</title>
   <desc id="dsh-desc">Escala mayor de A. A · B · C♯ · D · E · F♯ · G♯. Diapasón de 15 trastes en afinación estándar, con las tónicas marcadas en rojo.</desc>
   <defs>
@@ -8,20 +8,15 @@
       <stop offset="1" stop-color="#eee6d6" />
     </linearGradient>
     <linearGradient id="board" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#eee7d9" />
-      <stop offset="0.5" stop-color="#e9e1d1" />
-      <stop offset="1" stop-color="#e3d9c7" />
+      <stop offset="0" stop-color="#ffffff" />
+      <stop offset="0.5" stop-color="#faf7f0" />
+      <stop offset="1" stop-color="#f4eee2" />
     </linearGradient>
     <linearGradient id="capo" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#0f1210" />
       <stop offset="0.34" stop-color="#333630" />
       <stop offset="1" stop-color="#101310" />
     </linearGradient>
-    <radialGradient id="inlay-clay" cx="35%" cy="28%" r="74%">
-      <stop offset="0" stop-color="#d9c6a7" />
-      <stop offset="0.62" stop-color="#bda57f" />
-      <stop offset="1" stop-color="#947753" />
-    </radialGradient>
     <filter id="board-shadow" x="-10%" y="-20%" width="120%" height="150%">
       <feDropShadow dx="0" dy="8" stdDeviation="11" flood-color="#4a3c27" flood-opacity="0.15" />
     </filter>
@@ -35,14 +30,13 @@
       .subtitle { font-family: "Segoe UI", Arial, sans-serif; font-size: 17.6px; font-weight: 600; letter-spacing: 1.8px; fill: #4c574f; }
       .meta { font-family: "Segoe UI", Arial, sans-serif; font-size: 12.1px; font-weight: 700; letter-spacing: 1.8px; fill: #7d857d; }
       .meta-strong { font-family: "Segoe UI", Arial, sans-serif; font-size: 14.3px; font-weight: 700; letter-spacing: 1.1px; fill: #17231e; }
-      .board-base { fill: url(#board); stroke: #d2c6b2; stroke-width: 1.2; filter: url(#board-shadow); }
+      .board-base { fill: url(#board); stroke: #d9cfbc; stroke-width: 1.2; filter: url(#board-shadow); }
       .fret-shade { fill: #17231e; opacity: 0.018; }
       .string { stroke: #2a2924; stroke-linecap: round; opacity: 0.9; }
       .string--inactive { opacity: 0.16; }
       .fret { stroke: #a89b87; stroke-width: 1.5; }
       .fret-twelfth { stroke: #857967; stroke-width: 2.2; }
-      .fret-marker { fill: url(#inlay-clay); stroke: #8d7350; stroke-width: 0.9; opacity: 0.24; }
-      .fret-marker--double { opacity: 0.2; }
+      .fret-marker { fill: #bda57f; stroke: none; opacity: 0.38; }
       .fret-number { font-family: "Segoe UI", Arial, sans-serif; font-size: 17.6px; font-weight: 600; fill: #7d857d; letter-spacing: 0.5px; }
       .string-label text { font-family: "Segoe UI", Arial, sans-serif; font-size: 15.4px; font-weight: 700; fill: #7d857d; letter-spacing: 0.5px; }
       .capo { fill: url(#capo); }
@@ -51,11 +45,15 @@
       .note-disc { fill: #141412; stroke: #fbf7ef; stroke-width: 1; }
       .note-label { font-family: "Segoe UI", Arial, sans-serif; font-weight: 800; fill: #fffdf8; letter-spacing: -0.2px; }
       .root-halo { fill: none; stroke: #d84a3e; stroke-width: 2; opacity: 0.2; }
+      .note-halo { fill: none; stroke: #7d857d; stroke-width: 1.2; opacity: 0.32; }
       .is-root .note-disc { stroke: #d84a3e; stroke-width: 3.2; }
       .is-root .note-label { fill: #fff; }
       .role-third .note-disc { stroke: #3f8f5a; stroke-width: 2.4; }
       .role-fifth .note-disc { stroke: #df812f; stroke-width: 2.4; }
       .role-seventh .note-disc { stroke: #3b78b8; stroke-width: 2.4; }
+      .role-third .note-halo { stroke: #3f8f5a; }
+      .role-fifth .note-halo { stroke: #df812f; }
+      .role-seventh .note-halo { stroke: #3b78b8; }
       .note.is-context { opacity: 0.14; }
       .shape-hull { fill: #df812f; fill-opacity: 0.08; stroke: #df812f; stroke-width: 4.3; stroke-linejoin: round; }
       .shape-tag rect { fill: #fffaf0; stroke: #df812f; stroke-width: 1.5; }
@@ -64,12 +62,16 @@
       .shape-tag--all text { font-size: 9.9px; letter-spacing: 0.9px; fill: #4c574f; }
       .legend-text { font-family: "Segoe UI", Arial, sans-serif; font-size: 13.2px; font-weight: 600; fill: #4c574f; }
       .legend-strong { font-weight: 800; fill: #17231e; }
+      .legend-halo { fill: none; stroke: #7d857d; stroke-width: 1.2; opacity: 0.32; }
+      .legend-halo--third { stroke: #3f8f5a; }
+      .legend-halo--fifth { stroke: #df812f; }
+      .legend-halo--seventh { stroke: #3b78b8; }
       .footer-mark { font-family: Georgia, "Times New Roman", serif; font-size: 16.5px; font-weight: 700; fill: #17231e; letter-spacing: 0.2px; }
     </style>
   </defs>
 
-  <rect width="1520" height="540" fill="url(#paper)" />
-  <rect width="1520" height="540" fill="url(#paper-grain)" />
+  <rect width="1520" height="578" fill="url(#paper)" />
+  <rect width="1520" height="578" fill="url(#paper-grain)" />
 
   <g class="header">
     <rect x="64" y="54" width="38" height="3" rx="1.5" fill="#df812f" />
@@ -79,445 +81,450 @@
     <text class="meta" x="1456" y="59" text-anchor="end" font-size="12.1">15 TRASTES · AFINACIÓN ESTÁNDAR</text>
     <text class="meta-strong" x="1456" y="88" text-anchor="end" font-size="14.3">CAGED · TODAS</text>
     <text class="meta" x="1456" y="114" text-anchor="end" font-size="12.1">E B G D A E · DE AGUDA A GRAVE</text>
-    <line x1="64" y1="174" x2="1456" y2="174" stroke="#d2c6b2" stroke-width="1" />
+    <line x1="64" y1="174" x2="1456" y2="174" stroke="#d9cfbc" stroke-width="1" />
   </g>
 
   <g class="neck">
-    <rect class="board-base" x="100" y="210" width="1340" height="190" rx="22" />
-    <rect class="fret-shade" x="214" y="210" width="115.82454392527433" height="190" /><rect class="fret-shade" x="439.1483557144134" y="210" width="103.18793771221641" height="190" /><rect class="fret-shade" x="639.7327372117893" y="210" width="91.9300014353588" height="190" /><rect class="fret-shade" x="818.4331055667743" y="210" width="81.90032043740075" height="190" /><rect class="fret-shade" x="977.637034665437" y="210" width="72.96489049296326" height="190" /><rect class="fret-shade" x="1119.471611022341" y="210" width="65.0043274094312" height="190" /><rect class="fret-shade" x="1245.831853286685" y="210" width="57.91227196263708" height="190" /><rect class="fret-shade" x="1358.4060311438918" y="210" width="51.59396885610818" height="190" />
-    <circle class="fret-marker" cx="685.6977379294688" cy="308.25" r="9.6" />
-<circle class="fret-marker" cx="859.3832657854747" cy="308.25" r="9.6" />
-<circle class="fret-marker" cx="1014.1194799119187" cy="308.25" r="9.6" />
-<circle class="fret-marker" cx="1384.2030155719458" cy="308.25" r="9.6" />
-<circle class="fret-marker fret-marker--double" cx="1215.1538958592287" cy="275.75" r="9.2" />
-<circle class="fret-marker fret-marker--double" cx="1215.1538958592287" cy="340.75" r="9.2" />
-    <line class="string " x1="100" y1="226" x2="1440" y2="226" stroke-width="1.25" />
-<line class="string " x1="100" y1="258.5" x2="1440" y2="258.5" stroke-width="1.8" />
-<line class="string " x1="100" y1="291" x2="1440" y2="291" stroke-width="2.35" />
-<line class="string " x1="100" y1="323.5" x2="1440" y2="323.5" stroke-width="2.9" />
-<line class="string " x1="100" y1="356" x2="1440" y2="356" stroke-width="3.65" />
-<line class="string " x1="100" y1="388.5" x2="1440" y2="388.5" stroke-width="4.35" />
-    <line class="fret " x1="329.8245439252743" y1="210" x2="329.8245439252743" y2="400" />
-<line class="fret " x1="439.1483557144134" y1="210" x2="439.1483557144134" y2="400" />
-<line class="fret " x1="542.3362934266298" y1="210" x2="542.3362934266298" y2="400" />
-<line class="fret " x1="639.7327372117893" y1="210" x2="639.7327372117893" y2="400" />
-<line class="fret " x1="731.6627386471481" y1="210" x2="731.6627386471481" y2="400" />
-<line class="fret " x1="818.4331055667743" y1="210" x2="818.4331055667743" y2="400" />
-<line class="fret " x1="900.3334260041751" y1="210" x2="900.3334260041751" y2="400" />
-<line class="fret " x1="977.637034665437" y1="210" x2="977.637034665437" y2="400" />
-<line class="fret " x1="1050.6019251584003" y1="210" x2="1050.6019251584003" y2="400" />
-<line class="fret " x1="1119.471611022341" y1="210" x2="1119.471611022341" y2="400" />
-<line class="fret " x1="1184.4759384317722" y1="210" x2="1184.4759384317722" y2="400" />
-<line class="fret fret-twelfth" x1="1245.831853286685" y1="210" x2="1245.831853286685" y2="400" />
-<line class="fret " x1="1303.744125249322" y1="210" x2="1303.744125249322" y2="400" />
-<line class="fret " x1="1358.4060311438918" y1="210" x2="1358.4060311438918" y2="400" />
-<line class="fret " x1="1410" y1="210" x2="1410" y2="400" />
-    <rect class="capo" x="207.5" y="202" width="13" height="206" rx="5.5" />
-    <line x1="118" y1="210" x2="1422" y2="210" stroke="#d2c6b2" stroke-width="1" opacity="0.65" />
-    <line x1="118" y1="400" x2="1422" y2="400" stroke="#d2c6b2" stroke-width="1" opacity="0.65" />
+    <rect class="board-base" x="100" y="210" width="1340" height="228" rx="22" />
+    <rect class="fret-shade" x="214" y="210" width="115.82454392527433" height="228" /><rect class="fret-shade" x="439.1483557144134" y="210" width="103.18793771221641" height="228" /><rect class="fret-shade" x="639.7327372117893" y="210" width="91.9300014353588" height="228" /><rect class="fret-shade" x="818.4331055667743" y="210" width="81.90032043740075" height="228" /><rect class="fret-shade" x="977.637034665437" y="210" width="72.96489049296326" height="228" /><rect class="fret-shade" x="1119.471611022341" y="210" width="65.0043274094312" height="228" /><rect class="fret-shade" x="1245.831853286685" y="210" width="57.91227196263708" height="228" /><rect class="fret-shade" x="1358.4060311438918" y="210" width="51.59396885610818" height="228" />
+    <circle class="fret-marker" cx="685.6977379294688" cy="325" r="9.6" />
+<circle class="fret-marker" cx="859.3832657854747" cy="325" r="9.6" />
+<circle class="fret-marker" cx="1014.1194799119187" cy="325" r="9.6" />
+<circle class="fret-marker" cx="1384.2030155719458" cy="325" r="9.6" />
+<circle class="fret-marker fret-marker--double" cx="1215.1538958592287" cy="286" r="9.2" />
+<circle class="fret-marker fret-marker--double" cx="1215.1538958592287" cy="364" r="9.2" />
+    <line class="string " x1="100" y1="226.5" x2="1440" y2="226.5" stroke-width="1.25" />
+<line class="string " x1="100" y1="265.5" x2="1440" y2="265.5" stroke-width="1.8" />
+<line class="string " x1="100" y1="304.5" x2="1440" y2="304.5" stroke-width="2.35" />
+<line class="string " x1="100" y1="343.5" x2="1440" y2="343.5" stroke-width="2.9" />
+<line class="string " x1="100" y1="382.5" x2="1440" y2="382.5" stroke-width="3.65" />
+<line class="string " x1="100" y1="421.5" x2="1440" y2="421.5" stroke-width="4.35" />
+    <line class="fret " x1="329.8245439252743" y1="210" x2="329.8245439252743" y2="438" />
+<line class="fret " x1="439.1483557144134" y1="210" x2="439.1483557144134" y2="438" />
+<line class="fret " x1="542.3362934266298" y1="210" x2="542.3362934266298" y2="438" />
+<line class="fret " x1="639.7327372117893" y1="210" x2="639.7327372117893" y2="438" />
+<line class="fret " x1="731.6627386471481" y1="210" x2="731.6627386471481" y2="438" />
+<line class="fret " x1="818.4331055667743" y1="210" x2="818.4331055667743" y2="438" />
+<line class="fret " x1="900.3334260041751" y1="210" x2="900.3334260041751" y2="438" />
+<line class="fret " x1="977.637034665437" y1="210" x2="977.637034665437" y2="438" />
+<line class="fret " x1="1050.6019251584003" y1="210" x2="1050.6019251584003" y2="438" />
+<line class="fret " x1="1119.471611022341" y1="210" x2="1119.471611022341" y2="438" />
+<line class="fret " x1="1184.4759384317722" y1="210" x2="1184.4759384317722" y2="438" />
+<line class="fret fret-twelfth" x1="1245.831853286685" y1="210" x2="1245.831853286685" y2="438" />
+<line class="fret " x1="1303.744125249322" y1="210" x2="1303.744125249322" y2="438" />
+<line class="fret " x1="1358.4060311438918" y1="210" x2="1358.4060311438918" y2="438" />
+<line class="fret " x1="1410" y1="210" x2="1410" y2="438" />
+    <rect class="capo" x="207.5" y="202" width="13" height="244" rx="5.5" />
+    <line x1="118" y1="210" x2="1422" y2="210" stroke="#d9cfbc" stroke-width="1" opacity="0.65" />
+    <line x1="118" y1="438" x2="1422" y2="438" stroke="#d9cfbc" stroke-width="1" opacity="0.65" />
     
     
     
-    <g class="note role-fifth" transform="translate(192 226)">
-      
+    <g class="note role-fifth" transform="translate(192 226.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note" transform="translate(192 258.5)">
-      
+    <g class="note" transform="translate(192 265.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note" transform="translate(192 323.5)">
-      
+    <g class="note" transform="translate(192 343.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note is-root" transform="translate(192 356)">
+    <g class="note is-root" transform="translate(192 382.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note role-fifth" transform="translate(192 388.5)">
-      
+    <g class="note role-fifth" transform="translate(192 421.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
     
-    <g class="note" transform="translate(384.48644981984387 226)">
-      
+    <g class="note" transform="translate(384.48644981984387 226.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note role-seventh" transform="translate(591.0345153192095 226)">
-      
+    <g class="note role-seventh" transform="translate(591.0345153192095 226.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
     </g>
 
-    <g class="note is-root" transform="translate(685.6977379294688 226)">
+    <g class="note is-root" transform="translate(685.6977379294688 226.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note" transform="translate(859.3832657854747 226)">
-      
+    <g class="note" transform="translate(859.3832657854747 226.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note role-third" transform="translate(1014.1194799119187 226)">
-      
+    <g class="note role-third" transform="translate(1014.1194799119187 226.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
     </g>
 
-    <g class="note" transform="translate(1085.0367680903705 226)">
-      
+    <g class="note" transform="translate(1085.0367680903705 226.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note role-fifth" transform="translate(1215.1538958592287 226)">
-      
+    <g class="note role-fifth" transform="translate(1215.1538958592287 226.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note" transform="translate(1331.075078196607 226)">
-      
+    <g class="note" transform="translate(1331.075078196607 226.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note role-third" transform="translate(384.48644981984387 258.5)">
-      
+    <g class="note role-third" transform="translate(384.48644981984387 265.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
     </g>
 
-    <g class="note" transform="translate(490.74232457052165 258.5)">
-      
+    <g class="note" transform="translate(490.74232457052165 265.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note role-fifth" transform="translate(685.6977379294688 258.5)">
-      
+    <g class="note role-fifth" transform="translate(685.6977379294688 265.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note" transform="translate(859.3832657854747 258.5)">
-      
+    <g class="note" transform="translate(859.3832657854747 265.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note role-seventh" transform="translate(1014.1194799119187 258.5)">
-      
+    <g class="note role-seventh" transform="translate(1014.1194799119187 265.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
     </g>
 
-    <g class="note is-root" transform="translate(1085.0367680903705 258.5)">
+    <g class="note is-root" transform="translate(1085.0367680903705 265.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note" transform="translate(1215.1538958592287 258.5)">
-      
+    <g class="note" transform="translate(1215.1538958592287 265.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note role-third" transform="translate(1331.075078196607 258.5)">
-      
+    <g class="note role-third" transform="translate(1331.075078196607 265.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
     </g>
 
-    <g class="note" transform="translate(1384.2030155719458 258.5)">
-      
+    <g class="note" transform="translate(1384.2030155719458 265.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note role-seventh" transform="translate(271.9122719626372 291)">
-      
+    <g class="note role-seventh" transform="translate(271.9122719626372 304.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
     </g>
 
-    <g class="note is-root" transform="translate(384.48644981984387 291)">
+    <g class="note is-root" transform="translate(384.48644981984387 304.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note" transform="translate(591.0345153192095 291)">
-      
+    <g class="note" transform="translate(591.0345153192095 304.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note role-third" transform="translate(775.0479221069612 291)">
-      
+    <g class="note role-third" transform="translate(775.0479221069612 304.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
     </g>
 
-    <g class="note" transform="translate(859.3832657854747 291)">
-      
+    <g class="note" transform="translate(859.3832657854747 304.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note role-fifth" transform="translate(1014.1194799119187 291)">
-      
+    <g class="note role-fifth" transform="translate(1014.1194799119187 304.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note" transform="translate(1151.9737747270565 291)">
-      
+    <g class="note" transform="translate(1151.9737747270565 304.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note role-seventh" transform="translate(1274.7879892680035 291)">
-      
+    <g class="note role-seventh" transform="translate(1274.7879892680035 304.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
     </g>
 
-    <g class="note is-root" transform="translate(1331.075078196607 291)">
+    <g class="note is-root" transform="translate(1331.075078196607 304.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note role-fifth" transform="translate(384.48644981984387 323.5)">
-      
+    <g class="note role-fifth" transform="translate(384.48644981984387 343.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note" transform="translate(591.0345153192095 323.5)">
-      
+    <g class="note" transform="translate(591.0345153192095 343.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note role-seventh" transform="translate(775.0479221069612 323.5)">
-      
+    <g class="note role-seventh" transform="translate(775.0479221069612 343.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
     </g>
 
-    <g class="note is-root" transform="translate(859.3832657854747 323.5)">
+    <g class="note is-root" transform="translate(859.3832657854747 343.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note" transform="translate(1014.1194799119187 323.5)">
-      
+    <g class="note" transform="translate(1014.1194799119187 343.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note role-third" transform="translate(1151.9737747270565 323.5)">
-      
+    <g class="note role-third" transform="translate(1151.9737747270565 343.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
     </g>
 
-    <g class="note" transform="translate(1215.1538958592287 323.5)">
-      
+    <g class="note" transform="translate(1215.1538958592287 343.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note role-fifth" transform="translate(1331.075078196607 323.5)">
-      
+    <g class="note role-fifth" transform="translate(1331.075078196607 343.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note" transform="translate(384.48644981984387 356)">
-      
+    <g class="note" transform="translate(384.48644981984387 382.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note role-third" transform="translate(591.0345153192095 356)">
-      
+    <g class="note role-third" transform="translate(591.0345153192095 382.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
     </g>
 
-    <g class="note" transform="translate(685.6977379294688 356)">
-      
+    <g class="note" transform="translate(685.6977379294688 382.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note role-fifth" transform="translate(859.3832657854747 356)">
-      
+    <g class="note role-fifth" transform="translate(859.3832657854747 382.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note" transform="translate(1014.1194799119187 356)">
-      
+    <g class="note" transform="translate(1014.1194799119187 382.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note role-seventh" transform="translate(1151.9737747270565 356)">
-      
+    <g class="note role-seventh" transform="translate(1151.9737747270565 382.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
     </g>
 
-    <g class="note is-root" transform="translate(1215.1538958592287 356)">
+    <g class="note is-root" transform="translate(1215.1538958592287 382.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note" transform="translate(1331.075078196607 356)">
-      
+    <g class="note" transform="translate(1331.075078196607 382.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note" transform="translate(384.48644981984387 388.5)">
-      
+    <g class="note" transform="translate(384.48644981984387 421.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note role-seventh" transform="translate(591.0345153192095 388.5)">
-      
+    <g class="note role-seventh" transform="translate(591.0345153192095 421.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>
     </g>
 
-    <g class="note is-root" transform="translate(685.6977379294688 388.5)">
+    <g class="note is-root" transform="translate(685.6977379294688 421.5)">
       <circle class="root-halo" r="18.2" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">A</text>
     </g>
 
-    <g class="note" transform="translate(859.3832657854747 388.5)">
-      
+    <g class="note" transform="translate(859.3832657854747 421.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note role-third" transform="translate(1014.1194799119187 388.5)">
-      
+    <g class="note role-third" transform="translate(1014.1194799119187 421.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
     </g>
 
-    <g class="note" transform="translate(1085.0367680903705 388.5)">
-      
+    <g class="note" transform="translate(1085.0367680903705 421.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">D</text>
     </g>
 
-    <g class="note role-fifth" transform="translate(1215.1538958592287 388.5)">
-      
+    <g class="note role-fifth" transform="translate(1215.1538958592287 421.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note" transform="translate(1331.075078196607 388.5)">
-      
+    <g class="note" transform="translate(1331.075078196607 421.5)">
+      <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
     
       <g class="string-label" opacity="1">
-        <text x="72" y="226" text-anchor="middle" dominant-baseline="central">e</text>
+        <text x="72" y="226.5" text-anchor="middle" dominant-baseline="central">e</text>
       </g>
 
       <g class="string-label" opacity="1">
-        <text x="72" y="258.5" text-anchor="middle" dominant-baseline="central">B</text>
+        <text x="72" y="265.5" text-anchor="middle" dominant-baseline="central">B</text>
       </g>
 
       <g class="string-label" opacity="1">
-        <text x="72" y="291" text-anchor="middle" dominant-baseline="central">G</text>
+        <text x="72" y="304.5" text-anchor="middle" dominant-baseline="central">G</text>
       </g>
 
       <g class="string-label" opacity="1">
-        <text x="72" y="323.5" text-anchor="middle" dominant-baseline="central">D</text>
+        <text x="72" y="343.5" text-anchor="middle" dominant-baseline="central">D</text>
       </g>
 
       <g class="string-label" opacity="1">
-        <text x="72" y="356" text-anchor="middle" dominant-baseline="central">A</text>
+        <text x="72" y="382.5" text-anchor="middle" dominant-baseline="central">A</text>
       </g>
 
       <g class="string-label" opacity="1">
-        <text x="72" y="388.5" text-anchor="middle" dominant-baseline="central">E</text>
+        <text x="72" y="421.5" text-anchor="middle" dominant-baseline="central">E</text>
       </g>
     <text class="capo-label" x="214" y="192" text-anchor="middle">CEJILLA</text>
     <text class="open-label" x="144" y="192" text-anchor="middle">AL AIRE</text>
   </g>
 
   <g class="fret-numbers">
-    <text class="fret-number" x="271.9122719626372" y="434" text-anchor="middle">1</text>
-<text class="fret-number" x="384.48644981984387" y="434" text-anchor="middle">2</text>
-<text class="fret-number" x="490.74232457052165" y="434" text-anchor="middle">3</text>
-<text class="fret-number" x="591.0345153192095" y="434" text-anchor="middle">4</text>
-<text class="fret-number" x="685.6977379294688" y="434" text-anchor="middle">5</text>
-<text class="fret-number" x="775.0479221069612" y="434" text-anchor="middle">6</text>
-<text class="fret-number" x="859.3832657854747" y="434" text-anchor="middle">7</text>
-<text class="fret-number" x="938.985230334806" y="434" text-anchor="middle">8</text>
-<text class="fret-number" x="1014.1194799119187" y="434" text-anchor="middle">9</text>
-<text class="fret-number" x="1085.0367680903705" y="434" text-anchor="middle">10</text>
-<text class="fret-number" x="1151.9737747270565" y="434" text-anchor="middle">11</text>
-<text class="fret-number" x="1215.1538958592287" y="434" text-anchor="middle">12</text>
-<text class="fret-number" x="1274.7879892680035" y="434" text-anchor="middle">13</text>
-<text class="fret-number" x="1331.075078196607" y="434" text-anchor="middle">14</text>
-<text class="fret-number" x="1384.2030155719458" y="434" text-anchor="middle">15</text>
+    <text class="fret-number" x="271.9122719626372" y="472" text-anchor="middle">1</text>
+<text class="fret-number" x="384.48644981984387" y="472" text-anchor="middle">2</text>
+<text class="fret-number" x="490.74232457052165" y="472" text-anchor="middle">3</text>
+<text class="fret-number" x="591.0345153192095" y="472" text-anchor="middle">4</text>
+<text class="fret-number" x="685.6977379294688" y="472" text-anchor="middle">5</text>
+<text class="fret-number" x="775.0479221069612" y="472" text-anchor="middle">6</text>
+<text class="fret-number" x="859.3832657854747" y="472" text-anchor="middle">7</text>
+<text class="fret-number" x="938.985230334806" y="472" text-anchor="middle">8</text>
+<text class="fret-number" x="1014.1194799119187" y="472" text-anchor="middle">9</text>
+<text class="fret-number" x="1085.0367680903705" y="472" text-anchor="middle">10</text>
+<text class="fret-number" x="1151.9737747270565" y="472" text-anchor="middle">11</text>
+<text class="fret-number" x="1215.1538958592287" y="472" text-anchor="middle">12</text>
+<text class="fret-number" x="1274.7879892680035" y="472" text-anchor="middle">13</text>
+<text class="fret-number" x="1331.075078196607" y="472" text-anchor="middle">14</text>
+<text class="fret-number" x="1384.2030155719458" y="472" text-anchor="middle">15</text>
   </g>
 
   <g class="footer">
-    <line x1="64" y1="472" x2="1456" y2="472" stroke="#d2c6b2" stroke-width="1" />
-    <g transform="translate(78 500)">
-      <circle cx="0" cy="0" r="10" fill="#141412" />
-      <text class="legend-text" x="19" y="4">Nota de la <tspan class="legend-strong">escala</tspan></text>
+    <line x1="64" y1="510" x2="1456" y2="510" stroke="#d9cfbc" stroke-width="1" />
+    <g transform="translate(78 538)">
+      <circle class="legend-halo" cx="0" cy="0" r="13.2" />
+      <circle cx="0" cy="0" r="10" fill="#141412" stroke="#fbf7ef" stroke-width="1" />
+      <text class="legend-text" x="22" y="4">Nota de la <tspan class="legend-strong">escala</tspan></text>
     </g>
-    <g transform="translate(284 500)">
+    <g transform="translate(284 538)">
+      <circle cx="0" cy="0" r="13.2" fill="none" stroke="#d84a3e" stroke-width="2" opacity="0.2" />
       <circle cx="0" cy="0" r="10" fill="#141412" stroke="#d84a3e" stroke-width="3.4" />
-      <text class="legend-text" x="19" y="4"><tspan class="legend-strong">Tónica</tspan> resaltada</text>
+      <text class="legend-text" x="22" y="4"><tspan class="legend-strong">Tónica</tspan> resaltada</text>
     </g>
     
-    <g transform="translate(455 500)">
+    <g transform="translate(455 538)">
+      <circle class="legend-halo legend-halo--third" cx="0" cy="0" r="13.2" />
       <circle cx="0" cy="0" r="10" fill="#141412" stroke="#3f8f5a" stroke-width="3.2" />
-      <text class="legend-text" x="18" y="4">3ª</text>
+      <text class="legend-text" x="21" y="4">3ª</text>
     </g>
-    <g transform="translate(545 500)">
+    <g transform="translate(545 538)">
+      <circle class="legend-halo legend-halo--fifth" cx="0" cy="0" r="13.2" />
       <circle cx="0" cy="0" r="10" fill="#141412" stroke="#df812f" stroke-width="3.2" />
-      <text class="legend-text" x="18" y="4">5ª</text>
+      <text class="legend-text" x="21" y="4">5ª</text>
     </g>
-    <g transform="translate(635 500)">
+    <g transform="translate(635 538)">
+      <circle class="legend-halo legend-halo--seventh" cx="0" cy="0" r="13.2" />
       <circle cx="0" cy="0" r="10" fill="#141412" stroke="#3b78b8" stroke-width="3.2" />
-      <text class="legend-text" x="18" y="4">7ª</text>
+      <text class="legend-text" x="21" y="4">7ª</text>
     </g>
     
-    <text class="footer-mark" x="1456" y="505" text-anchor="end">MÁSTIL STUDIO</text>
+    <text class="footer-mark" x="1456" y="543" text-anchor="end">MÁSTIL STUDIO</text>
   </g>
 
   <!-- 0 notas definen la forma CAGED seleccionada. -->

@@ -30,16 +30,18 @@ const MAJOR_TEMPLATES = {
     id: 'A',
     anchorString: 4,
     offsets: { 4: 0, 3: 2, 2: 2, 1: 2, 0: 0 },
-    // Include fret 4 on the lower strings: F♯ on D/4 and C♯ on A/4 belong
-    // to the A-major A-position and were being cut off by a 0–3 window.
-    window: [0, 4],
+    // A position: from the tonic on the 5th string to the tonic on the 1st
+    // string. For A major this is 0–5, keeping A/D open and G♯ on E/4.
+    window: [0, 5],
     anchorLabel: '5ª cuerda',
   },
   G: {
     id: 'G',
     anchorString: 5,
     offsets: { 5: 0, 4: -1, 3: -3, 2: -3, 1: -3, 0: 0 },
-    window: [-3, 0],
+    // G position: one fret below the tonic on the 3rd string through the
+    // tonics on the 1st and 6th strings.
+    window: [-4, 0],
     anchorLabel: '6ª cuerda',
   },
   E: {
@@ -55,7 +57,9 @@ const MAJOR_TEMPLATES = {
     id: 'D',
     anchorString: 3,
     offsets: { 3: 0, 2: 2, 1: 3, 0: 2 },
-    window: [0, 3],
+    // D position: one fret below the tonic on the 4th string through the
+    // tonic on the 2nd string.
+    window: [-1, 3],
     anchorLabel: '4ª cuerda',
   },
 };
@@ -72,14 +76,14 @@ const MINOR_TEMPLATES = {
     id: 'A',
     anchorString: 4,
     offsets: { 4: 0, 3: 2, 2: 2, 1: 1, 0: 0 },
-    window: [0, 3],
+    window: [0, 5],
     anchorLabel: '5ª cuerda',
   },
   G: {
     id: 'G',
     anchorString: 5,
     offsets: { 5: 0, 4: -2, 3: -3, 2: 0, 1: 0, 0: 0 },
-    window: [-3, 0],
+    window: [-4, 0],
     anchorLabel: '6ª cuerda',
   },
   E: {
@@ -93,7 +97,7 @@ const MINOR_TEMPLATES = {
     id: 'D',
     anchorString: 3,
     offsets: { 3: 0, 2: 2, 1: 3, 0: 1 },
-    window: [0, 3],
+    window: [-1, 3],
     anchorLabel: '4ª cuerda',
   },
 };
