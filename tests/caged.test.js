@@ -55,7 +55,7 @@ test('the five major shapes around A major are distinct CAGED positions', () => 
 test('A major CAGED windows follow the anchored definitions', () => {
   const expected = {
     C: { start: 9, end: 12 },
-    A: { start: 12, end: 15 },
+    A: { start: 11, end: 15 },
     G: { start: 1, end: 5 },
     E: { start: 4, end: 7 },
     D: { start: 6, end: 10 },

@@ -61,13 +61,12 @@ test('fingerings use 2–3 notes per string, at most 4 frets, without gaps', () 
   }
 });
 
-test('A major A shape uses the upper octave and stays out of G', () => {
+test('A major A shape runs 11–15 and stays out of G', () => {
   const pcs = [9, 11, 1, 2, 4, 6, 8];
   const shape = completeScaleWindow(getCagedShape('A', 9, 'major'), pcs);
   const fingering = buildScaleFingering({ shape, notePcs: pcs });
 
-  assert.deepEqual(shape.window, { start: 12, end: 15 });
-  // The upper A position is clipped at fret 15; it intentionally falls back
-  // to the map instead of expanding backward into the G position.
-  assert.equal(fingering, null);
+  assert.deepEqual(shape.window, { start: 11, end: 15 });
+  assert.ok(fingering);
+  assert.equal(fingering.groups[0].notes[0].fret, 12);
 });

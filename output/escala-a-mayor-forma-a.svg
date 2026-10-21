@@ -118,7 +118,7 @@
     <line x1="118" y1="210" x2="1422" y2="210" stroke="#d9cfbc" stroke-width="1" opacity="0.65" />
     <line x1="118" y1="438" x2="1422" y2="438" stroke="#d9cfbc" stroke-width="1" opacity="0.65" />
     
-      <g class="shape-tag" transform="translate(1299.6784557155872 190)">
+      <g class="shape-tag" transform="translate(1268.0883951495011 190)">
         <rect x="-52" y="-14" width="104" height="28" rx="14" />
         <text text-anchor="middle" dominant-baseline="central">FORMA A</text>
       </g>
@@ -292,7 +292,7 @@
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">E</text>
     </g>
 
-    <g class="note is-context" transform="translate(1151.9737747270565 304.5)">
+    <g class="note" transform="translate(1151.9737747270565 304.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
@@ -340,7 +340,7 @@
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">B</text>
     </g>
 
-    <g class="note is-context" transform="translate(1151.9737747270565 343.5)">
+    <g class="note" transform="translate(1151.9737747270565 343.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">C♯</text>
@@ -388,7 +388,7 @@
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">F♯</text>
     </g>
 
-    <g class="note is-context" transform="translate(1151.9737747270565 382.5)">
+    <g class="note" transform="translate(1151.9737747270565 382.5)">
       <circle class="note-halo" r="17.4" />
       <circle class="note-disc" r="14" />
       <text class="note-label" text-anchor="middle" dominant-baseline="central" font-size="14">G♯</text>

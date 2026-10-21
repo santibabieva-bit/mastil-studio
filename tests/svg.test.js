@@ -21,7 +21,7 @@ test('all-positions SVG is standalone and omits the CAGED overlay by default', (
   assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
   assert.match(svg, /<title id="dsh-title">Escala mayor de A<\/title>/);
   assert.match(svg, /CAGED · TODAS/);
-  assert.doesNotMatch(svg, /A · 12–15/);
+  assert.doesNotMatch(svg, /A · 11–15/);
   assert.doesNotMatch(svg, /C · 9–12/);
   assert.doesNotMatch(svg, /<path class="shape-hull"/);
   assert.match(svg, /class="note is-root"/);
@@ -40,7 +40,7 @@ test('the CAGED overlay is optional and includes rail tags when enabled', () => 
     showCagedOverlay: true,
   });
 
-  assert.match(svg, /A · 12–15/);
+  assert.match(svg, /A · 11–15/);
   assert.match(svg, /C · 9–12/);
   assert.match(svg, /Posiciones CAGED/);
 });
@@ -356,7 +356,7 @@ test('A major A-shape includes C-sharp and F-sharp', () => {
     colorRoles: false,
   });
 
-  assert.deepEqual(diagram.shape.window, { start: 12, end: 15 });
+  assert.deepEqual(diagram.shape.window, { start: 11, end: 15 });
   const labels = [...diagram.svg.matchAll(/class="note-label"[^>]*>([^<]+)<\/text>/g)]
     .map((match) => match[1]);
   assert.ok(labels.includes('C♯'));

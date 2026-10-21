@@ -17,8 +17,9 @@ Versiones guardadas:
 - [v1.2](versions/v1.2): digitaciones de 2–3 notas por cuerda.
 - [v1.3](versions/v1.3): ventanas CAGED A/G/D corregidas y ajustes visuales.
 - [v1.4](versions/v1.4): forma A trasladada a 12–15 para no superponerse con G.
+- [v1.5](versions/v1.5): forma A ajustada a **11–15**.
 
-ZIPs: [v1.0](versions/mastil-studio-v1.0.zip) · [v1.1](versions/mastil-studio-v1.1.zip) · [v1.2](versions/mastil-studio-v1.2.zip) · [v1.3](versions/mastil-studio-v1.3.zip) · [v1.4](versions/mastil-studio-v1.4.zip).
+ZIPs: [v1.0](versions/mastil-studio-v1.0.zip) · [v1.1](versions/mastil-studio-v1.1.zip) · [v1.2](versions/mastil-studio-v1.2.zip) · [v1.3](versions/mastil-studio-v1.3.zip) · [v1.4](versions/mastil-studio-v1.4.zip) · [v1.5](versions/mastil-studio-v1.5.zip).
 
 ## Probar
 
@@ -94,7 +95,7 @@ Vista rápida de la plantilla completa:
 
 ![Plantilla de escala mayor de A](docs/escala-a-mayor.png)
 
-En La mayor, la forma A se traslada a **12–15** para no superponerse con G (1–5). Queda **parcial**, porque la tónica de la 1ª cuerda estaría en el traste 17 y el mástil llega a 15. La escala empieza con la posición **G** y la forma A aparece al final del mástil.
+En La mayor, la forma A va de **11–15**: empieza un traste antes de la tónica de 5ª (A/12) y termina en el límite del mástil. Queda **parcial**, porque la tónica de la 1ª cuerda estaría en el traste 17. La escala empieza con la posición **G** y la forma A aparece al final del mástil.
 
 ![Escala mayor de A en forma A](docs/escala-a-mayor-forma-a.png)
 
@@ -174,7 +175,7 @@ const { svg } = buildDiagram({
 - **Cuerdas al aire en voicings.** No cuentan para la extensión de la mano: un voicing como `0-0-0-11` es válido aunque su extensión total supere 5 trastes.
 - **Tipografía de cabecera.** Título y subtítulo se separan dinámicamente cuando `typeScale` crece; el crecimiento del encabezado se limita a 1,4× para no invadir el mástil.
 - **CAGED por ventanas.** Cada forma tiene una ventana de 3–6 trastes y una tónica de referencia. Al elegir una forma se atenúan las notas fuera de la ventana y se resalta la tríada que define esa forma. Las definiciones usadas son:
-  - **A:** de la tónica de 5ª a la tónica de 1ª. En La mayor se usa la octava alta (12–15) para no superponerse con G; queda parcial por el límite de 15 trastes.
+  - **A:** un traste antes de la tónica de 5ª hasta el traste de la tónica de 3ª. En La mayor se usa la octava alta **11–15**; queda parcial por el límite de 15 trastes.
   - **G:** de un traste antes de la tónica de 3ª a las tónicas de 1ª/6ª.
   - **D:** de un traste antes de la tónica de 4ª a la tónica de 2ª.
   - **C y E:** se mantienen como estaban.
@@ -184,7 +185,7 @@ const { svg } = buildDiagram({
 
 ## Próximos pasos sugeridos
 
-1. **Auditar todas las digitaciones** de escalas, triadas, arpegios y cuatríadas: anclaje CAGED, span mínimo y familias horizontal/diagonal. La forma A de La mayor se movió a 12–15 para no superponerse con G; queda parcial por el límite de 15 trastes.
+1. **Auditar todas las digitaciones** de escalas, triadas, arpegios y cuatríadas: anclaje CAGED, span mínimo y familias horizontal/diagonal. La forma A de La mayor se movió a 11–15 para no superponerse con G; queda parcial por el límite de 15 trastes.
 2. Cejilla móvil real: transportar el diagrama según el traste de cejilla.
 3. Traste máximo ajustable con lienzo dinámico (base ya preparada).
 4. Inversiones 1ª, 2ª y 3ª de cuatríadas, más otras octavas y juegos de cuerdas.

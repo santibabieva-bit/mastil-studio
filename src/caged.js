@@ -30,9 +30,9 @@ const MAJOR_TEMPLATES = {
     id: 'A',
     anchorString: 4,
     offsets: { 4: 0, 3: 2, 2: 2, 1: 2, 0: 0 },
-    // A position: from the tonic on the 5th string to the tonic on the 1st
-    // string. For A major this is 0–5, keeping A/D open and G♯ on E/4.
-    window: [0, 5],
+    // A position: one fret below the tonic on the 5th string through fret 15
+    // (the upper A position). For A major this is 11–15.
+    window: [-1, 3],
     anchorLabel: '5ª cuerda',
   },
   G: {
@@ -76,7 +76,7 @@ const MINOR_TEMPLATES = {
     id: 'A',
     anchorString: 4,
     offsets: { 4: 0, 3: 2, 2: 2, 1: 1, 0: 0 },
-    window: [0, 5],
+    window: [-1, 3],
     anchorLabel: '5ª cuerda',
   },
   G: {
@@ -284,10 +284,11 @@ export function completeScaleWindow(
   { minPerString = 2, maxFret = 15, maxSpan = 6 } = {},
 ) {
   const pitchSet = new Set(notePcs.map((pc) => mod(pc, 12)));
-  // The upper A position starts at A/12 on the 5th string and is clipped by
-  // the 15-fret board. Do not expand it back toward C/G: that would overlap
-  // the G position and defeat the purpose of moving A up an octave.
-  const preserveStart = shape.id === 'A' && shape.window.start >= 12;
+  // The upper A position is anchored at A/12 and spans 11–14. Keep both ends
+  // fixed: expanding it would move it back toward G or past the intended
+  // 3rd-string tonic.
+  const preserveStart = shape.id === 'A' && shape.anchor >= 12;
+  const preserveEnd = preserveStart;
   let start = shape.window.start;
   let end = shape.window.end;
 
