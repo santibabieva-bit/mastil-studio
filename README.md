@@ -23,6 +23,45 @@ Versiones guardadas:
 
 ZIPs: [v1.0](versions/mastil-studio-v1.0.zip) · [v1.1](versions/mastil-studio-v1.1.zip) · [v1.2](versions/mastil-studio-v1.2.zip) · [v1.3](versions/mastil-studio-v1.3.zip) · [v1.4](versions/mastil-studio-v1.4.zip) · [v1.5](versions/mastil-studio-v1.5.zip).
 
+## Mástil Lab (nuevo)
+
+Además del generador de plantillas, el repo incluye **Mástil Lab**, un estudio de guitarra interactivo en `http://127.0.0.1:4173/lab/`: 21 herramientas que suenan, preguntan y recuerdan lo que practicas. Todo funciona en el navegador, sin cuentas ni dependencias; el progreso se guarda en `localStorage` y, tras la primera visita, **funciona sin conexión** (instalable como app).
+
+| Grupo | Herramienta | Qué hace |
+|---|---|---|
+| Aprender el mástil | **Fretboard Navigator** | Mástil de hasta 24 trastes con audio al pulsar, entrada MIDI (lo que tocas se ilumina), 14 afinaciones (incluye bajo y 7 cuerdas), modo zurdo, posiciones «N por cuerda», cajas, CAGED, voicings e inversiones, etiquetas (nombre, Do-Re-Mi, grado), exportar PNG/SVG y enlace compartible |
+| | **Triad Lab** | Tríadas y cuatríadas por juegos de cuerdas e inversiones, acorde sobre su escala, arpegios por posición con dedos, conducción de voces (camino de mínimo movimiento entre acordes), superposición de dos acordes y lámina CAGED de 5 mástiles imprimible |
+| | **Theory Trainer** | Quizzes de notas del mástil, encontrar la nota, intervalos, acordes de la tonalidad, números romanos, modos y armaduras; 3 niveles, modo 2 minutos, puntos débiles y **repaso espaciado** (cajas de 1–32 días) |
+| | **Chord & Key Finder** | Nombra un acorde a partir de sus notas, muestra sus formas, lista los acordes de cualquier tonalidad/modo y deduce la tonalidad de una canción |
+| Practicar | **Rutina guiada** | Sesión a medida (15–90 min) con bloques cronometrados; da más peso a tus puntos débiles, a las tarjetas vencidas y a lo que menos practicas |
+| | **Audio Lab** | Tus propias canciones: velocidad 25–150 % sin cambiar el tono, bucle A-B con forma de onda, subida de velocidad por vuelta, cuenta previa y marcadores |
+| | **Exercise Generator** | Secuencias (terceras, grupos, zigzag, sweep…) sobre escalas/arpegios con tab, bucle, cuenta previa y metrónomo |
+| | **Metrónomo y caja de ritmos** | Acentos por pulso, subdivisiones, swing, entrenador de velocidad, compases en silencio, temporizador, tap tempo y caja de ritmos de 16 pasos |
+| | **Strum Trainer** | Patrones de rasgueo con acentos, apagados y silencios sobre tus acordes |
+| | **Rhythm Trainer** | Ritmos aleatorios, modo «de memoria» y medición de tus toques con la barra espaciadora |
+| | **Vibrato Trainer** | Nota sostenida que sube y baja al compás, con entrenador de velocidad |
+| | **Practice Log** | Minutos por día (automático + manual), racha, meta diaria y semanal, 16 semanas, 16 logros, notas y copia de seguridad completa (JSON) |
+| Tocar y escribir | **Jam Studio** | La base suena y el mástil sigue los acordes: escala sugerida por acorde (dórica sobre ii, mixolidia sobre V, blues…), notas 1-3-5-7 en color, aviso del siguiente cambio, enfoque escala/pentatónica/acorde/tríada/arpegio, retos de aterrizaje puntuados con micrófono o MIDI, tempo progresivo, compases en silencio y bucle de sección; 14 progresiones |
+| | **Backing Track Creator** | Batería, bajo, guitarra y sinte sobre una progresión editable; 11 grooves (rock, pop, funk, shuffle, jazz, bossa, country, reggae, balada, 3/4, 6/8, 12/8); guarda tus bases y expórtalas a MIDI |
+| | **Tab Creator** | Rejilla con ligados, slides, bends, vibrato, armónicos; reproducción, importar/exportar texto, PDF, **MIDI y MusicXML** |
+| | **Randomiser** | Notas, ritmos, progresiones por complejidad, riffs con tab, ideas de jam y retos |
+| | **Capo & Transpose** | Transposición y la cejilla con las formas abiertas más fáciles |
+| Oído y afinación | **Ear Trainer** | Intervalos y calidades de acorde con guitarra o piano; repite lo que fallas |
+| | **EQ Trainer** | Identifica qué banda de frecuencias se ha realzado o recortado en una base |
+| | **Guitar Tuner** | Afinador por micrófono (autocorrelación) con detección de cuerda |
+| Referencia | **Referencias rápidas** | Escalas en las 12 tonalidades, acordes por tonalidad, afinaciones y círculo de quintas |
+
+Las herramientas están conectadas: «Practica esto» en el Navigator abre los ejercicios, el backing o el quiz con la misma tonalidad, y el Randomiser envía progresiones y riffs al Backing y al Tab Creator. El audio es síntesis pura (Karplus-Strong para la guitarra, osciladores y ruido para batería, bajo y pad), sin muestras.
+
+```text
+lab/index.html, lab/lab.css   Shell, rutas por hash (#/herramienta?param=valor)
+lab/js/core/                  Lógica pura y testeable: música, acordes, ritmo, ejercicios, quiz, oído,
+                              práctica, tab, riffs, pitch, estado en URL
+lab/js/audio/                 Motor WebAudio, transporte con anticipación, reproductores de backing y tab
+lab/js/ui/                    Mástil SVG interactivo, diagramas de acorde, exportación, helpers DOM
+lab/js/tools/                 Una pantalla por herramienta
+```
+
 ## Probar
 
 Requiere Node.js 20 o superior.
@@ -36,7 +75,8 @@ Abrir `http://127.0.0.1:4173`.
 No hay dependencias de runtime ni proceso de build: el servidor sólo sirve archivos estáticos y el navegador ejecuta módulos ES.
 
 ```bash
-npm test       # 63 pruebas de teoría, parser, CAGED, voicings, digitaciones y SVG
+npm test       # 103 pruebas: teoría, parser, CAGED, voicings, digitaciones, SVG y el núcleo del Lab (jam, tríadas, MIDI, repaso espaciado, rutinas)
+npm run precache  # regenera lab/precache.json (lista del modo sin conexión) tras añadir archivos al Lab
 npm run export # regenera los SVG de ejemplo en output/
 ```
 

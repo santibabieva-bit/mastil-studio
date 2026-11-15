@@ -1,13 +1,14 @@
 {
   "name": "mastil-studio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Generador de plantillas SVG de diapasón con posiciones CAGED",
+  "description": "Generador de plantillas SVG de diapasón con posiciones CAGED y Mástil Lab, estudio de guitarra interactivo",
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test --test-isolation=none \"tests/*.test.js\"",
-    "export": "node scripts/export-samples.mjs"
+    "export": "node scripts/export-samples.mjs",
+    "precache": "node scripts/precache.mjs"
   },
   "engines": {
     "node": ">=20"
