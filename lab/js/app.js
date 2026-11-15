@@ -58,6 +58,17 @@ window.addEventListener('pagehide', () => {
   playingSince.clear();
 });
 
+/* ─── Recordatorio de pausas: cada 20 min de práctica con sonido ─── */
+let activeMinutes = 0;
+let idleMinutes = 0;
+setInterval(() => {
+  if (playingSince.size) { activeMinutes += 1; idleMinutes = 0; } else { idleMinutes += 1; if (idleMinutes >= 5) activeMinutes = 0; }
+  if (activeMinutes >= 20 && storage.get('break-reminder', true)) {
+    activeMinutes = 0;
+    toast('Llevas 20 minutos tocando: haz una pausa de 2 min, suelta la guitarra y estira muñecas y dedos.');
+  }
+}, 60000);
+
 function updateStreak() {
   const chip = document.getElementById('streak-chip');
   const streak = currentStreak(practice.state);

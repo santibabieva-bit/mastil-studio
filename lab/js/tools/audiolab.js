@@ -5,6 +5,7 @@
  * Nada se sube a ningún sitio: el archivo se reproduce en tu navegador.
  */
 
+import { chordsFromChroma, chromagram, dominantNotes } from '../core/chroma.js';
 import { button, clear, h, slider, toggle } from '../ui/dom.js';
 import { header } from './common.js';
 
@@ -29,6 +30,7 @@ function mount(root, ctx) {
   const timeEl = h('div', { class: 'big-number', style: 'text-align:center;font-size:1.8rem' }, '0:00.0');
   const info = h('p', { class: 'hint', style: 'text-align:center' }, 'Elige un archivo de audio (mp3, wav, m4a, ogg…) o de vídeo para empezar.');
   const markersEl = h('div', { class: 'stack' });
+  const analysisEl = h('div', { class: 'stack' });
   const loopInfo = h('p', { class: 'hint' }, '');
   const controls = h('div', { class: 'stack' });
   const playBtn = button('▶ Reproducir', { variant: 'accent', onClick: togglePlay, attrs: { class: 'btn btn-accent btn-lg', disabled: true } });
@@ -133,7 +135,7 @@ function mount(root, ctx) {
     url = URL.createObjectURL(file);
     st.name = file.name;
     st.key = `${file.name}:${file.size}`;
-    st.a = null; st.b = null; st.peaks = null;
+    st.a = null; st.b = null; st.peaks = null; st.buffer = null;
     st.markers = ctx.storage.get('audiolab-markers', {})[st.key] ?? [];
     audio.src = url;
     setPitchLock();
@@ -155,6 +157,7 @@ function mount(root, ctx) {
       try {
         await engine.ensure();
         const buffer = await engine.ctx.decodeAudioData(await file.arrayBuffer());
+        st.buffer = buffer;
         const channel = buffer.getChannelData(0);
         const bins = 500;
         const size = Math.max(1, Math.floor(channel.length / bins));
@@ -175,6 +178,47 @@ function mount(root, ctx) {
     const all = ctx.storage.get('audiolab-markers', {});
     all[st.key] = st.markers;
     ctx.storage.set('audiolab-markers', all);
+  }
+
+  /** Región (en segundos) que se analiza: el bucle A–B o 16 s desde la posición actual. */
+  function analysisRange() {
+    const start = st.a ?? audio.currentTime;
+    const end = st.b ?? Math.min(st.duration, start + 16);
+    return { start, end: Math.min(end, start + 32) };
+  }
+
+  async function analyze(sliced) {
+    clear(analysisEl);
+    if (!st.buffer) { analysisEl.append(h('p', { class: 'hint' }, 'Carga un archivo (y espera a que aparezca la forma de onda) para poder analizarlo.')); return; }
+    analysisEl.append(h('p', { class: 'hint' }, 'Analizando…'));
+    await new Promise((r) => setTimeout(r, 30));
+    const sr = st.buffer.sampleRate;
+    const mono = st.buffer.getChannelData(0);
+    const { start, end } = analysisRange();
+    const slices = sliced ? Math.min(16, Math.max(1, Math.floor((end - start) / 2))) : 1;
+    const len = (end - start) / slices;
+    const rows = [];
+    for (let i = 0; i < slices; i += 1) {
+      const from = Math.floor((start + i * len) * sr);
+      const to = Math.floor((start + (i + 1) * len) * sr);
+      const chroma = chromagram(mono, sr, { from, to });
+      rows.push({ t: start + i * len, chords: chordsFromChroma(chroma, { top: 3 }), notes: dominantNotes(chroma, { top: 4 }) });
+      if (i % 3 === 2) await new Promise((r) => setTimeout(r, 0));
+    }
+    clear(analysisEl);
+    const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+    if (!sliced) {
+      const r = rows[0];
+      analysisEl.append(
+        h('p', {}, `Acorde más probable: ${r.chords[0].name} (también ${r.chords.slice(1).map((c) => c.name).join(', ')}).`),
+        h('p', { class: 'hint' }, `Notas dominantes: ${r.notes.map((n) => `${n.name} ${Math.round(n.share * 100)} %`).join(' · ')}.`),
+      );
+    } else {
+      analysisEl.append(
+        h('div', { class: 'pills' }, ...rows.map((r) => h('span', { class: 'pill', title: `desde ${fmt(r.t)}` }, `${fmt(r.t)} · ${r.chords[0].name}`))),
+        h('p', { class: 'hint' }, 'Un acorde por cada ~2 s. Compáralos con lo que oyes y corrige a mano.'),
+      );
+    }
   }
 
   function drawMarkers() {
@@ -227,6 +271,11 @@ function mount(root, ctx) {
           drawWave();
         } })),
         markersEl,
+      ),
+      h('section', { class: 'panel stack' }, h('h2', {}, 'Transcripción asistida'),
+        h('p', { class: 'hint' }, 'Analiza el tramo A–B (o los 16 s desde donde estás) y sugiere los acordes y las notas dominantes. Es una ayuda para tu oído: funciona mejor con música poco densa y puede equivocarse.'),
+        h('div', { class: 'row' }, button('Analizar acorde del tramo', { variant: 'accent', onClick: () => analyze(false) }), button('Progresión aproximada', { variant: 'outline', onClick: () => analyze(true) })),
+        analysisEl,
       ),
     );
   }

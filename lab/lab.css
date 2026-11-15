@@ -332,3 +332,40 @@ input.tab-cell.is-now { background: #ffd9a8; }
   .lab-nav, .lab-top, .no-print { display: none !important; }
   .caged-fig { break-inside: avoid; }
 }
+
+/* ─── Técnica: Timing Lab, Drills, Bends, Licks, Grabación ─── */
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.stat-row .stat { text-align: center; padding: 10px 6px; border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--cream); }
+.stat-row .stat .big-number { font-size: 1.7rem; }
+.hist { display: flex; align-items: flex-end; gap: 4px; height: 110px; padding: 6px 2px 0; }
+.hist-col { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+.hist-bar { width: 100%; min-height: 2px; border-radius: 4px 4px 0 0; background: var(--orange); }
+.hist-bar.is-ok { background: var(--ok); }
+.hist-label { font-size: 0.68rem; color: var(--ink-muted); margin-top: 3px; }
+.timeline svg { width: 100%; height: auto; color: var(--ink-soft); }
+.spark { display: flex; align-items: flex-end; gap: 4px; height: 70px; }
+.spark-bar { flex: 1; background: var(--orange); border-radius: 4px 4px 0 0; min-height: 4px; }
+.drill-tab { font-family: var(--font-mono); font-size: 0.82rem; }
+.tab-line { margin-bottom: 14px; width: max-content; }
+.tab-row { display: flex; align-items: center; border-bottom: 1px solid var(--line); }
+.tab-row--pick { border-bottom: 0; color: var(--ink-muted); }
+.tab-label { width: 1.6rem; font-weight: 700; color: var(--ink-soft); }
+.tab-cell { width: 2.2rem; text-align: center; padding: 2px 0; color: var(--ink-muted); transition: background 0.05s; }
+.tab-cell.has-note { color: var(--ink); font-weight: 700; }
+.tab-cell.is-now { background: var(--orange-pale); }
+.tab-cell.has-note.is-now { background: var(--orange); color: #fff; border-radius: 6px; }
+.drill-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--cream); cursor: pointer; font: inherit; color: inherit; }
+.drill-item.is-active { border-color: var(--orange); background: var(--orange-pale); font-weight: 700; }
+.ladder-dots { display: flex; gap: 10px; justify-content: center; }
+.ladder-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line); background: var(--cream); }
+.ladder-dot.is-on { background: var(--ok); border-color: var(--ok); }
+.key-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 6px; }
+.key-btn { padding: 8px 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--cream); font: inherit; font-weight: 700; cursor: pointer; color: inherit; }
+.key-btn.is-active { border-color: var(--orange); background: var(--orange-pale); }
+.key-btn.is-off { opacity: 0.4; cursor: not-allowed; }
+.pill-btn { border: 0; cursor: pointer; font: inherit; }
+.pill-btn.is-active { background: var(--orange); color: #fff; }
+.wave { color: var(--ink-soft); }
+.lab-break { border-left: 4px solid var(--orange); }
+.radar { max-width: 340px; margin: 0 auto; }
+.radar svg { width: 100%; height: auto; color: var(--ink-soft); }

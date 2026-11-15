@@ -3,17 +3,55 @@
 import {
   MILESTONES, achieved, addMinutes, weekMinutes, weeklyGoal, currentStreak, dateKey, formatMinutes, intensity, longestStreak, minutesOn, parseKey, setNote, totalMinutes, totalsByTool, weekGrid,
 } from '../core/practice.js';
-import { button, clear, h, slider } from '../ui/dom.js';
+import { button, clear, h, segmented, slider } from '../ui/dom.js';
 import { saveBlob } from '../ui/export.js';
 import { header } from './common.js';
+import { nextFocus, skillRadar } from '../core/skills.js';
+import { topRecords } from '../core/speed.js';
+import { drillById } from '../core/drills.js';
 
 const TOOL_NAMES = {
   navigator: 'Navigator', exercises: 'Ejercicios', metronome: 'Metrónomo', drums: 'Caja de ritmos', strum: 'Rasgueo',
   rhythm: 'Ritmo', vibrato: 'Vibrato', backing: 'Backing', quiz: 'Theory Trainer', ear: 'Oído', tab: 'Tabs',
   eq: 'EQ', tuner: 'Afinador', manual: 'Manual', randomiser: 'Randomiser', chords: 'Acordes', capo: 'Capo', jam: 'Jam Studio', triads: 'Triad Lab', routine: 'Rutina', audiolab: 'Audio Lab',
+  timing: 'Timing Lab', drills: 'Drills', bendlab: 'Bends y vibrato', recorder: 'Autograbación', licks: 'Licks', blind: 'Mástil a ciegas',
 };
 
 function mount(root, ctx) {
+  /** Radar de cinco ejes + récords + siguiente tarea recomendada. */
+  function radarPanel(practiceState) {
+    const speed = ctx.storage.get('speed-history', {});
+    const radar = skillRadar({
+      timing: ctx.storage.get('timing-history', []),
+      pitch: ctx.storage.get('pitch-history', []),
+      quiz: ctx.storage.get('quiz-stats', null),
+      speed,
+      practice: practiceState,
+    });
+    const size = 300;
+    const c = size / 2;
+    const R = 105;
+    const pt = (i, frac) => {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / radar.length;
+      return [c + Math.cos(a) * R * frac, c + Math.sin(a) * R * frac];
+    };
+    const ring = (f) => radar.map((_, i) => pt(i, f).map((v) => v.toFixed(1)).join(',')).join(' ');
+    const shape = radar.map((a, i) => pt(i, (a.value ?? 0) / 100).map((v) => v.toFixed(1)).join(',')).join(' ');
+    const labels = radar.map((a, i) => { const [x, y] = pt(i, 1.2); return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="currentColor">${a.label}${a.value == null ? ' –' : ` ${a.value}`}</text>`; }).join('');
+    const el = h('div', { class: 'radar' });
+    el.innerHTML = `<svg viewBox="0 0 ${size} ${size}" role="img" aria-label="Radar de habilidades">${[0.25, 0.5, 0.75, 1].map((f) => `<polygon points="${ring(f)}" fill="none" stroke="currentColor" opacity=".18"/>`).join('')}<polygon points="${shape}" fill="var(--orange)" fill-opacity=".35" stroke="var(--orange-dark)" stroke-width="2"/>${labels}</svg>`;
+    const focus = nextFocus(radar);
+    const records = topRecords(speed, 5);
+    return h('section', { class: 'panel stack' },
+      h('h2', {}, 'Tu nivel por habilidad'),
+      el,
+      h('p', {}, `Siguiente paso recomendado: ${focus.label} (${focus.reason}). ${focus.hint}`),
+      h('div', { class: 'row' }, button(`Ir a ${focus.label}`, { variant: 'accent', onClick: () => ctx.go(focus.tool) })),
+      records.length ? h('div', { class: 'stack' }, h('span', { class: 'legend' }, 'Récords de velocidad (bpm limpios)'), h('div', { class: 'pills' }, ...records.map((r) => h('span', { class: 'pill', title: r.date }, `${drillById(r.id).title.split(':')[0]} · ${r.best}`)))) : null,
+      h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Recordatorio de pausas (cada 20 min tocando)'), segmented([{ value: 'on', label: 'Activado' }, { value: 'off', label: 'Desactivado' }], ctx.storage.get('break-reminder', true) ? 'on' : 'off', (v) => ctx.storage.set('break-reminder', v === 'on'))),
+    );
+  }
+
   const body = h('div', { class: 'stack' });
   const today = dateKey();
   let selected = today;
@@ -66,6 +104,7 @@ function mount(root, ctx) {
         h('div', { class: 'stat' }, h('strong', {}, `${longestStreak(s)}`), h('span', {}, 'mejor racha')),
         h('div', { class: 'stat' }, h('strong', {}, formatMinutes(totalMinutes(s))), h('span', {}, 'total')),
       ),
+      radarPanel(s),
       h('section', { class: 'panel stack' },
         h('h2', {}, 'Registro rápido'),
         h('div', { class: 'row' }, [5, 10, 15, 30, 60].map((m) => button(`+${m} min`, { variant: 'outline', onClick: () => { ctx.practice.replace(addMinutes(state(), selected, m, 'manual')); render(); ctx.toast(`+${m} min anotados`); } }))),

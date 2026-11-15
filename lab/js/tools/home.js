@@ -14,6 +14,8 @@ export function renderHome(root, ctx) {
     ['quiz', 'Quiz de 2 minutos', 'Notas del mástil, intervalos y acordes'],
     ['jam', 'Jam con el mástil en vivo', 'La base suena y el mástil sigue los acordes'],
     ['routine', 'Rutina guiada', 'Una sesión a medida con bloques cronometrados'],
+    ['timing', 'Mide tu pulso', 'El micrófono mide cuánto te desvías del clic'],
+    ['drills', 'Drills con escalera de velocidad', 'Sube el tempo sólo con repeticiones limpias'],
   ];
 
   root.append(
@@ -25,7 +27,7 @@ export function renderHome(root, ctx) {
         { class: 'panel' },
         h('div', { class: 'kicker' }, 'Estudio de guitarra'),
         h('h1', {}, 'Todo lo que necesitas para estudiar, en una sola pestaña.'),
-        h('p', {}, 'Mástil interactivo, jam sobre acordes con el mástil en vivo, tríadas, entrenadores de teoría, ritmo y oído, backing tracks, creador de tabs y registro de práctica. Sin cuentas: tu progreso se guarda en este navegador y funciona sin conexión.'),
+        h('p', {}, 'Mástil interactivo, jam sobre acordes con el mástil en vivo, tríadas, drills de técnica con medición de pulso por micrófono, entrenadores de teoría, ritmo y oído, backing tracks, creador de tabs y registro de práctica. Sin cuentas: tu progreso se guarda en este navegador y funciona sin conexión.'),
         h('div', { class: 'row', style: 'margin-top:14px' }, quick.slice(0, 2).map(([id, label]) => h('a', { class: 'btn btn-accent', href: `#/${id}` }, label)), h('a', { class: 'btn btn-outline', href: '../index.html' }, 'Plantillas CAGED (Studio)')),
       ),
       h(

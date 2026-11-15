@@ -30,6 +30,7 @@ function mount(root, ctx) {
     vol: 0.9,
     speedOn: false, speedTarget: 140, speedStep: 5, speedEvery: 4,
     ivOn: false, ivPlay: 2, ivSilent: 1,
+    rndOn: false, rndPct: 30,
     timerOn: false, timerMin: 5,
   };
   const saved = ctx.storage.get('metro-accents', null);
@@ -121,7 +122,9 @@ function mount(root, ctx) {
         }
         const within = step % perBeat;
         const beat = Math.floor(step / perBeat) % state.beats;
-        const audible = isBarAudible({ play: state.ivPlay, silent: state.ivOn ? state.ivSilent : 0, bar });
+        let audible = isBarAudible({ play: state.ivPlay, silent: state.ivOn ? state.ivSilent : 0, bar });
+        // Pulsos aleatorios en silencio: nunca el primero de cada compás cuando el modo es «medio».
+        if (audible && state.rndOn && within === 0 && !(beat === 0 && step < stepsPerBar) && Math.random() * 100 < state.rndPct) audible = false;
         let t = time;
         if (state.sub === 'eighth' && within === 1) t += (state.swing - 0.5) * (60 / barBpm);
         if (audible) {
@@ -141,6 +144,11 @@ function mount(root, ctx) {
 
   // Tap tempo
   const taps = [];
+  const backbeatBtn = button('Sólo 2 y 4', { variant: 'outline', title: 'Silencia los pulsos 1 y 3: cuenta tú el resto (estilo jazz/blues)', onClick: () => {
+    state.accents = Array.from({ length: state.beats }, (_, i) => (i % 2 === 1 ? 2 : 0));
+    ctx.storage.set('metro-accents', state.accents);
+    drawLights();
+  } });
   const tapBtn = button('Tap tempo', { variant: 'outline', onClick: () => {
     const now = performance.now();
     if (taps.length && now - taps[taps.length - 1] > 2500) taps.length = 0;
@@ -163,7 +171,7 @@ function mount(root, ctx) {
           bpmSlider,
           lights,
           barOut,
-          h('div', { class: 'row', style: 'justify-content:center' }, metroPlay.el, tapBtn),
+          h('div', { class: 'row', style: 'justify-content:center' }, metroPlay.el, tapBtn, backbeatBtn),
           h('p', { class: 'hint', style: 'text-align:center' }, 'Pulsa los círculos para cambiar el acento (fuerte → normal → silencio). Barra espaciadora: empezar/parar.'),
         ),
         h('div', { class: 'stack' },
@@ -179,6 +187,8 @@ function mount(root, ctx) {
             trainerSpeed,
             toggle('Compases en silencio (¿mantienes el tempo?)', state.ivOn, (v) => { state.ivOn = v; renderTrainers(); }),
             trainerInterval,
+            toggle('Pulsos aleatorios en silencio (pulso interno)', state.rndOn, (v) => { state.rndOn = v; renderTrainers(); }),
+            trainerRandom,
             toggle('Temporizador de práctica', state.timerOn, (v) => { state.timerOn = v; renderTrainers(); }),
             trainerTimer,
           ),
@@ -191,10 +201,13 @@ function mount(root, ctx) {
   const trainerSpeed = h('div', { class: 'stack' });
   const trainerInterval = h('div', { class: 'stack' });
   const trainerTimer = h('div', { class: 'stack' });
+  const trainerRandom = h('div', { class: 'stack' });
   function renderTrainers() {
     clear(trainerSpeed);
     clear(trainerInterval);
     clear(trainerTimer);
+    clear(trainerRandom);
+    trainerRandom.hidden = !state.rndOn;
     trainerSpeed.hidden = !state.speedOn;
     trainerInterval.hidden = !state.ivOn;
     trainerTimer.hidden = !state.timerOn;
@@ -206,6 +219,10 @@ function mount(root, ctx) {
     trainerInterval.append(
       slider({ min: 1, max: 8, value: state.ivPlay, label: 'Suena', format: (v) => `${v} comp.`, onInput: (v) => { state.ivPlay = v; } }),
       slider({ min: 1, max: 8, value: state.ivSilent, label: 'Silencio', format: (v) => `${v} comp.`, onInput: (v) => { state.ivSilent = v; } }),
+    );
+    trainerRandom.append(
+      slider({ min: 10, max: 70, value: state.rndPct, label: 'Pulsos que se apagan', format: (v) => `${v} %`, onInput: (v) => { state.rndPct = v; } }),
+      h('p', { class: 'hint' }, 'El primer compás suena entero; después caen pulsos al azar y tú tienes que seguir marcándolos por dentro.'),
     );
     trainerTimer.append(slider({ min: 1, max: 60, value: state.timerMin, label: 'Minutos', format: (v) => `${v} min`, onInput: (v) => { state.timerMin = v; } }));
   }

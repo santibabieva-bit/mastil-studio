@@ -5,13 +5,16 @@
  */
 
 import { pick } from './music.js';
+import { DRILL_LIST } from './drills.js';
 
 const BASE = [
   { id: 'warmup', weight: 0.1, tools: ['metronome', 'exercises'] },
-  { id: 'technique', weight: 0.25, tools: ['exercises'] },
+  { id: 'technique', weight: 0.2, tools: ['drills', 'exercises'] },
+  { id: 'timing', weight: 0.1, tools: ['timing'] },
+  { id: 'pitch', weight: 0.06, tools: ['bendlab'] },
   { id: 'triads', weight: 0.15, tools: ['triads'] },
   { id: 'theory', weight: 0.15, tools: ['quiz'] },
-  { id: 'jam', weight: 0.25, tools: ['jam', 'backing'] },
+  { id: 'jam', weight: 0.2, tools: ['jam', 'backing'] },
   { id: 'ear', weight: 0.1, tools: ['ear'] },
 ];
 
@@ -31,18 +34,27 @@ function balance(totals, tools) {
  * @param {Array<{key:string,rate:number}>} [o.weak] puntos débiles del quiz
  * @param {object} [o.totals] minutos por herramienta
  */
-export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {}, due = 0, rng = Math.random }) {
-  const total = Math.max(10, Math.min(120, Math.round(minutes)));
+export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {}, due = 0, focus = null, rng = Math.random }) {
+  const full = Math.max(10, Math.min(120, Math.round(minutes)));
+  // Sesiones largas: 3 minutos finales de estiramiento y vuelta a la calma.
+  const cooldown = full >= 30 ? 3 : 0;
+  const total = full - cooldown;
   const weights = BASE.map((b) => {
     let w = b.weight * (0.6 + 0.8 * balance(totals, b.tools));
+    if (focus && b.id === focus) w *= 1.8;
     if (b.id === 'theory' && (weak.length || due > 0)) w *= 1.5;
     return { ...b, w };
   });
   const sum = weights.reduce((s, b) => s + b.w, 0);
   let blocks = weights.map((b) => ({ ...b, min: Math.max(0, Math.round((b.w / sum) * total)) }));
   // Los bloques de menos de 3 minutos se funden con el mayor.
-  const small = blocks.filter((b) => b.min < 3);
-  const keep = blocks.filter((b) => b.min >= 3);
+  let small = blocks.filter((b) => b.min < 3);
+  let keep = blocks.filter((b) => b.min >= 3);
+  if (!keep.length) {
+    // Sesión muy corta: nos quedamos con los bloques de más peso.
+    keep = [...blocks].sort((a, b) => b.w - a.w).slice(0, Math.max(1, Math.floor(total / 4))).map((b) => ({ ...b, min: 3 }));
+    small = [];
+  }
   const bonus = small.reduce((s, b) => s + b.min, 0);
   if (keep.length) keep.sort((a, b) => b.min - a.min)[0].min += bonus;
   blocks = BASE.map((b) => keep.find((k) => k.id === b.id)).filter(Boolean);
@@ -58,12 +70,17 @@ export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {},
   const [famA, qualA] = pick(SCALES, rng);
   const jamId = pick(JAMS, rng);
   const triadType = pick(TRIAD_TYPES, rng);
+  const drill = pick(DRILL_LIST, rng);
   const out = blocks.map((b) => {
     switch (b.id) {
       case 'warmup':
-        return { id: b.id, minutes: b.min, tool: 'metronome', title: 'Calentamiento', params: { bpm: 70 }, why: 'Manos sueltas: notas lentas y limpias con el metrónomo.' };
+        return { id: b.id, minutes: b.min, tool: 'metronome', title: 'Calentamiento', params: { bpm: 70 }, why: 'Manos sueltas: notas lentas y limpias con el metrónomo. Hombros bajos, muñecas rectas y respira.' };
       case 'technique':
-        return { id: b.id, minutes: b.min, tool: 'exercises', title: 'Escalas y arpegios', params: { root, fam: famA, q: qualA }, why: 'Una secuencia en una posición; sube el tempo solo cuando salga limpia.' };
+        return { id: b.id, minutes: b.min, tool: 'drills', title: 'Drill técnico', params: { drill: drill.id }, why: `${drill.title}. Sube el tempo sólo con repeticiones limpias (escalera de velocidad).` };
+      case 'timing':
+        return { id: b.id, minutes: b.min, tool: 'timing', title: 'Medir el pulso', params: {}, why: 'Toca notas sueltas con el clic y mira tu desviación en milisegundos.' };
+      case 'pitch':
+        return { id: b.id, minutes: b.min, tool: 'bendlab', title: 'Bends y vibrato', params: {}, why: 'Comprueba con el micrófono que tus bends llegan a la nota y tu vibrato es regular.' };
       case 'triads':
         return { id: b.id, minutes: b.min, tool: 'triads', title: 'Tríadas e inversiones', params: { root, q: triadType, view: 'inv' }, why: 'Toca cada inversión en un juego de cuerdas y nómbrala en voz alta.' };
       case 'theory':
@@ -74,5 +91,6 @@ export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {},
         return { id: b.id, minutes: b.min, tool: 'ear', title: 'Oído', params: {}, why: 'Intervalos y acordes de oído.' };
     }
   });
-  return { total, blocks: out };
+  if (cooldown) out.push({ id: 'cooldown', minutes: cooldown, tool: 'metronome', title: 'Vuelta a la calma', params: { bpm: 60 }, why: 'Toca algo lento y relajado y estira muñecas y dedos. Si notas dolor, para: no se toca a través del dolor.' });
+  return { total: full, blocks: out };
 }

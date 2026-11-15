@@ -9,10 +9,11 @@ import { buildRoutine } from '../core/routine.js';
 import { dateKey, totalsByTool } from '../core/practice.js';
 import { dueCount } from '../core/srs.js';
 import { emptyStats, weakSpots } from '../core/quiz.js';
+import { nextFocus, skillRadar } from '../core/skills.js';
 import { button, clear, h, segmented, select } from '../ui/dom.js';
 import { header } from './common.js';
 
-const TOOL_LABEL = { metronome: 'Metrónomo', exercises: 'Ejercicios', triads: 'Triad Lab', quiz: 'Theory Trainer', jam: 'Jam Studio', ear: 'Ear Trainer', backing: 'Backing' };
+const TOOL_LABEL = { metronome: 'Metrónomo', exercises: 'Ejercicios', drills: 'Drills', timing: 'Timing Lab', bendlab: 'Bends y vibrato', triads: 'Triad Lab', quiz: 'Theory Trainer', jam: 'Jam Studio', ear: 'Ear Trainer', backing: 'Backing' };
 
 function mount(root, ctx) {
   const today = dateKey();
@@ -32,6 +33,19 @@ function mount(root, ctx) {
 
   const persist = () => ctx.storage.set('routine-today', { date: today, plan: cfg.plan, done: cfg.done });
 
+  /** Eje más flojo del radar → bloque de la rutina que lo trabaja. */
+  function focusBlock() {
+    const radar = skillRadar({
+      timing: ctx.storage.get('timing-history', []),
+      pitch: ctx.storage.get('pitch-history', []),
+      quiz: ctx.storage.get('quiz-stats', null),
+      speed: ctx.storage.get('speed-history', {}),
+      practice: ctx.practice.state,
+    });
+    const f = nextFocus(radar);
+    return { timing: 'timing', pitch: 'pitch', theory: 'theory', speed: 'technique' }[f.id] ?? null;
+  }
+
   function generate() {
     const stats = ctx.storage.get('quiz-stats', null) ?? emptyStats();
     cfg.plan = buildRoutine({
@@ -40,6 +54,7 @@ function mount(root, ctx) {
       weak: weakSpots(stats, 5),
       due: dueCount(stats.srs),
       totals: totalsByTool(ctx.practice.state),
+      focus: focusBlock(),
     });
     cfg.done = [];
     stopTimer();
