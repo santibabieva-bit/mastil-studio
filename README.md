@@ -10,6 +10,8 @@ Prueba funcional `v0.1`. La aplicación web, el motor de teoría, el render SVG 
 
 Lista viva de lo que queda: [PENDIENTES.md](PENDIENTES.md).
 
+Análisis, arquitectura modular y estimación para la futura app de **páginas de entrenamiento** (escalas, arpegios, tríadas y acordes): [docs/APP-ENTRENAMIENTO.md](docs/APP-ENTRENAMIENTO.md).
+
 Versiones guardadas:
 
 - [v1.0](versions/v1.0): antes de compactar el mástil y agregar cuatríadas.
