@@ -1268,3 +1268,7 @@ select:focus-visible {
     animation-iteration-count: 1 !important;
   }
 }
+
+.site-copyright { text-align: center; padding: 18px 16px 26px; color: var(--ink-soft); }
+.site-copyright a { color: inherit; }
+@media print { .site-copyright { display: none; } }

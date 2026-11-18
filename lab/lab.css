@@ -397,3 +397,7 @@ details.syntax pre { font-family: var(--font-mono); font-size: 0.82rem; white-sp
 }
 
 .at-host .at-follow { position: absolute; z-index: 15; pointer-events: none; background: rgba(223, 129, 47, 0.28); border-left: 3px solid rgba(223, 129, 47, 0.95); border-radius: 2px; transition: left 0.06s linear; }
+
+.site-copyright { text-align: center; padding: 18px 16px 26px; color: var(--ink-soft); }
+.site-copyright a { color: inherit; }
+@media print { .site-copyright { display: none; } }

@@ -11,3 +11,6 @@ models/
 stems/
 torch_models/
 __pycache__/
+prompt.txt
+PENDIENTES.md
+audit/
