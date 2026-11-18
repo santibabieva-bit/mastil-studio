@@ -247,3 +247,7 @@ const { svg } = buildDiagram({
 8. Afinaciones alternativas y modo zurdo.
 9. Exportación PDF y presets de estilo (claro, oscuro, impresión).
 10. Guardar/cargar plantillas por URL o archivo JSON.
+
+## Licencia
+
+Código bajo [PolyForm Noncommercial 1.0.0](LICENSE): puedes verlo, estudiarlo y usarlo sin fines comerciales; no se permite venderlo ni usarlo comercialmente sin permiso. Los componentes de terceros de `lab/vendor/` (alphaTab, Bravura, Sonivox) mantienen sus propias licencias.
