@@ -159,8 +159,8 @@ test('alphaTex: cabecera, afinación y compases de 4/4', () => {
   // 8 corcheas = un compás completo, sin silencios sobrantes ni barra final
   assert.ok(!/\|\s*$/.test(tex.trim()));
   const five = beatsToAlphaTex(beats.slice(0, 5), { duration: 8 });
-  assert.equal((five.match(/ r/g) ?? []).length, 3, 'completa el compás con 3 silencios (corchea + negra + blanca)');
-  assert.ok(/:8 r :4 r :2 r/.test(five), 'silencios agrupados y alineados con los tiempos');
+  assert.equal((five.match(/ r/g) ?? []).length, 2, 'tres corcheas libres: corchea + negra');
+  assert.ok(/:8 r :4 r/.test(five), 'silencios agrupados y alineados con los tiempos');
 });
 
 test('alphaTex: acordes, técnicas, dedos y tresillos', () => {
