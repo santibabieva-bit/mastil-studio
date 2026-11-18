@@ -1,5 +1,5 @@
 /* Service worker de Mástil Lab: usa la red cuando hay y guarda todo para funcionar sin conexión. */
-const CACHE = 'mastil-lab-v3';
+const CACHE = 'mastil-lab-v4';
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {

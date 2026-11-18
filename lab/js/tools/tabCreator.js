@@ -9,6 +9,8 @@ import { TabPlayer } from '../audio/tabplayer.js';
 import { button, clear, copyText, h, segmented, select, slider, toggle } from '../ui/dom.js';
 import { saveBlob, slug } from '../ui/export.js';
 import { tabToMidi, tabToMusicXML } from '../core/midi.js';
+import { tabToAlphaTex } from '../core/alphatex.js';
+import { createScore, scoreToolbar } from '../ui/score.js';
 import { header, playToggle } from './common.js';
 
 const SUBS = [
@@ -29,7 +31,7 @@ function mount(root, ctx) {
     tab = raw ? tabFromJson(raw) : null;
   }
   if (!tab) tab = createTab({ cols: 24 });
-  const view = { barEvery: 8, loop: false, countIn: true, mode: 'edit' };
+  const view = { barEvery: tab.barCols ?? (tab.subdivision ?? 2) * 4, loop: false, countIn: true, mode: 'edit' };
   const history = { undo: [], redo: [], last: 0 };
   let focused = { s: 0, c: 0 };
 
@@ -44,8 +46,42 @@ function mount(root, ctx) {
   ctx.onCleanup(() => player.stop());
   const play = playToggle({ startLabel: '▶ Reproducir', onStart: () => startPlay(0), onStop: () => player.stop(), size: 'btn-lg' });
 
+  /* Vista «Partitura»: la misma tab pintada y reproducible con alphaTab. */
+  const scoreWrap = h('div', { class: 'stack', hidden: true });
+  let score = null;
+  let scoreTimer = 0;
+  const ensureScore = () => {
+    if (score) return score;
+    const stage = h('div');
+    score = createScore(stage, { onPlaying: (on) => engine.notePlaying('tab-score', on) });
+    scoreWrap.append(scoreToolbar(score, { layout: true }), stage);
+    return score;
+  };
+  const renderScore = () => ensureScore().load(tabToAlphaTex(tab));
+
+  /* Vista previa en vivo (sólo tablatura) debajo del editor. */
+  const liveWrap = h('div', { class: 'stack' });
+  const liveStage = h('div');
+  const live = createScore(liveStage, { stave: 'tab', scroll: false });
+  liveWrap.append(h('h2', { style: 'margin:0' }, 'Vista previa (alphaTab)'), scoreToolbar(live, { playback: false, stave: true }), liveStage);
+  const renderLive = () => live.load(tabToAlphaTex(tab));
+
+  const scheduleScore = () => {
+    clearTimeout(scoreTimer);
+    scoreTimer = setTimeout(() => {
+      if (view.mode === 'score') renderScore();
+      if (view.mode === 'edit') renderLive();
+    }, 500);
+  };
+  ctx.onCleanup(() => {
+    clearTimeout(scoreTimer);
+    score?.destroy();
+    live.destroy();
+  });
+
   const persist = () => {
     ctx.storage.set('tab-current', tabToJson(tab));
+    if (view.mode === 'score' || view.mode === 'edit') scheduleScore();
   };
 
   function commit(next, { coalesce = false } = {}) {
@@ -194,12 +230,20 @@ function mount(root, ctx) {
 
   const importArea = h('textarea', { rows: 6, placeholder: 'Pega aquí una tablatura en texto (líneas e|---5---|)…', 'aria-label': 'Importar tab' });
 
-  const modeSeg = segmented([{ value: 'edit', label: 'Editor' }, { value: 'text', label: 'Texto' }], view.mode, (v) => {
+  const showMode = (v) => {
     view.mode = v;
     editor.hidden = v !== 'edit';
     preview.hidden = v !== 'text';
+    scoreWrap.hidden = v !== 'score';
+    liveWrap.hidden = v !== 'edit';
+    if (v === 'edit') renderLive();
     if (v === 'text') drawPreview();
-  });
+    if (v === 'score') {
+      player.stop();
+      renderScore();
+    }
+  };
+  const modeSeg = segmented([{ value: 'edit', label: 'Editor' }, { value: 'text', label: 'Texto' }, { value: 'score', label: 'Partitura' }], view.mode, showMode);
 
   root.append(
     header('Tocar y escribir', 'Tab Creator', 'Escribe tablatura escribiendo números en la rejilla. La separación entre columnas marca el ritmo; añade ligados, slides, bends, vibrato y armónicos, escúchala y exporta a texto o PDF.'),
@@ -214,6 +258,8 @@ function mount(root, ctx) {
       h('div', { class: 'row no-print' }, h('span', { class: 'hint' }, 'Técnicas:'), techBar, h('span', { class: 'hint' }, 'Teclas: flechas para moverte, Enter/espacio avanza.')),
       editor,
       preview,
+      liveWrap,
+      scoreWrap,
     ),
     h('div', { class: 'grid-2', style: 'align-items:start' },
       h('section', { class: 'panel stack no-print' }, h('h2', {}, 'Reproducción'),
@@ -232,7 +278,7 @@ function mount(root, ctx) {
           commit(next);
           rebuild();
         })),
-        h('div', { class: 'field' }, h('label', {}, 'Compás cada'), select([4, 6, 8, 12, 16].map((n) => ({ value: n, label: `${n} columnas` })), view.barEvery, (v) => { view.barEvery = Number(v); rebuild(); })),
+        h('div', { class: 'field' }, h('label', {}, 'Compás cada'), select([4, 6, 8, 12, 16].map((n) => ({ value: n, label: `${n} columnas` })), view.barEvery, (v) => { view.barEvery = Number(v); tab = { ...tab, barCols: Number(v) }; persist(); rebuild(); })),
         h('div', { class: 'row' },
           button('+ 8 columnas', { variant: 'outline', onClick: () => { commit(ensureColumns(tab, tabLength(tab) + 8)); rebuild(); } }),
           button('Insertar columna', { variant: 'outline', onClick: () => { commit(insertColumns(tab, focused.c)); rebuild(); focusCell(focused.s, focused.c); } }),
@@ -247,8 +293,9 @@ function mount(root, ctx) {
           button('Copiar texto', { variant: 'outline', onClick: async () => ctx.toast((await copyText(tabToAscii(tab, 32))) ? 'Tab copiada' : 'No se pudo copiar') }),
           button('Guardar .txt', { variant: 'outline', onClick: () => saveBlob(new Blob([`${tab.title}\n\n${tabToAscii(tab, 32)}\n`], { type: 'text/plain' }), `${slug(tab.title)}.txt`, 'Tablatura') }),
           button('Exportar MIDI', { variant: 'outline', onClick: () => saveBlob(new Blob([tabToMidi(tab)], { type: 'audio/midi' }), `${slug(tab.title)}.mid`, 'MIDI') }),
+          button('Editar como alphaTex', { variant: 'outline', onClick: () => { ctx.storage.set('score-handoff', tabToAlphaTex(tab)); ctx.go('score', { handoff: 1 }); } }),
           button('Exportar MusicXML', { variant: 'outline', onClick: () => saveBlob(new Blob([tabToMusicXML(tab)], { type: 'application/vnd.recordare.musicxml+xml' }), `${slug(tab.title)}.musicxml`, 'MusicXML') }),
-          button('Imprimir / PDF', { variant: 'dark', onClick: () => { view.mode = 'text'; modeSeg.setValue('text'); editor.hidden = true; preview.hidden = false; drawPreview(); setTimeout(() => window.print(), 50); } }),
+          button('Imprimir / PDF', { variant: 'dark', onClick: () => { modeSeg.setValue(view.mode === 'score' ? 'score' : 'text'); if (view.mode !== 'score') showMode('text'); setTimeout(() => window.print(), 50); } }),
         ),
         h('div', { class: 'row' },
           button('Guardar en mi biblioteca', { variant: 'accent', onClick: () => {
@@ -277,6 +324,7 @@ function mount(root, ctx) {
   );
   preview.hidden = true;
   rebuild();
+  renderLive();
   drawSaved();
   void coerce;
 }

@@ -13,14 +13,13 @@ import {
   bestSeries, burstPlan, isPlateau, newLadder, recordClean, submitRep, topRecords,
 } from '../core/speed.js';
 import { Transport } from '../audio/transport.js';
+import { beatsToAlphaTex, eventsToBeats, durationForSub } from '../core/alphatex.js';
+import { createScore, scoreToolbar } from '../ui/score.js';
 import {
   button, clear, h, segmented, select, slider,
 } from '../ui/dom.js';
 import { header, playToggle } from './common.js';
 
-const STRING_NAMES = ['e', 'B', 'G', 'D', 'A', 'E'];
-const PICK_GLYPH = { D: '⊓', U: 'V', p: 'p', i: 'i', m: 'm', a: 'a' };
-const ART_GLYPH = { H: 'h', P: 'p', T: 'T', M: 'x' };
 
 function mount(root, ctx) {
   const { engine } = ctx;
@@ -40,12 +39,13 @@ function mount(root, ctx) {
   };
   let history = ctx.storage.get('speed-history', {});
   const transport = new Transport(engine, 'drills');
-  const columns = [];
   let built = null;
   let loops = 0;
   ctx.onCleanup(() => transport.stop());
 
-  const tabBox = h('div', { class: 'drill-tab' });
+  const tabBox = h('div', { class: 'drill-score' });
+  const score = createScore(tabBox, { stave: 'tab', fingers: true, cursor: false });
+  ctx.onCleanup(() => score.destroy());
   const info = h('div', { class: 'stack' });
   const ladderBox = h('div', { class: 'stack' });
   const historyBox = h('div', { class: 'stack' });
@@ -55,7 +55,7 @@ function mount(root, ctx) {
   const play = playToggle({ startLabel: '▶ Empezar', stopLabel: '■ Parar', onStart: () => start(), onStop: () => transport.stop(), size: 'btn-lg' });
   transport.onStop = () => {
     play.set(false);
-    columns.forEach((c) => c.forEach((el) => el.classList.remove('is-now')));
+    score.seekBeat(0);
   };
 
   function rebuild() {
@@ -73,34 +73,16 @@ function mount(root, ctx) {
   }
 
   function drawTab() {
-    clear(tabBox);
-    columns.length = 0;
-    const events = built.events;
-    for (let from = 0; from < events.length; from += 16) {
-      const chunk = events.slice(from, from + 16);
-      const line = h('div', { class: 'tab-line' });
-      const pickRow = h('div', { class: 'tab-row tab-row--pick' }, h('span', { class: 'tab-label' }, ''));
-      chunk.forEach((ev, k) => {
-        const idx = from + k;
-        columns[idx] = [];
-        const cell = h('span', { class: 'tab-cell tab-cell--pick' }, ev.pick ? (PICK_GLYPH[ev.pick] ?? ev.pick) : ' ');
-        columns[idx].push(cell);
-        pickRow.append(cell);
-      });
-      line.append(pickRow);
-      for (let s = 0; s < 6; s += 1) {
-        const row = h('div', { class: 'tab-row' }, h('span', { class: 'tab-label' }, STRING_NAMES[s]));
-        chunk.forEach((ev, k) => {
-          const idx = from + k;
-          const mine = ev.s === s;
-          const cell = h('span', { class: `tab-cell ${mine ? 'has-note' : ''}` }, mine ? `${ev.art === 'M' ? 'x' : ev.f}${ev.art && ev.art !== 'M' ? ART_GLYPH[ev.art] : ''}` : '·');
-          columns[idx].push(cell);
-          row.append(cell);
-        });
-        line.append(row);
-      }
-      tabBox.append(line);
-    }
+    const { duration, tuplet } = durationForSub(cfg.sub);
+    score.load(beatsToAlphaTex(eventsToBeats(built.events), {
+      title: built.drill.title,
+      subtitle: 'Drill técnico',
+      tempo: cfg.bpm,
+      tuning,
+      duration,
+      tuplet,
+      showFingers: true,
+    }));
   }
 
   function drawInfo() {
@@ -114,7 +96,7 @@ function mount(root, ctx) {
       const perms = permutations24();
       controls.push(h('div', { class: 'field' }, h('label', {}, 'Permutación de dedos'), select(perms.map((p, i) => ({ value: i, label: `${i + 1}. ${p.join('-')}` })), cfg.variant, (v) => { cfg.variant = Number(v); ctx.storage.set('drill-variant', cfg.variant); rebuild(); })));
     }
-    controls.push(h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Notas por pulso'), segmented([{ value: 1, label: '1' }, { value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }], cfg.sub, (v) => { cfg.sub = Number(v); ctx.storage.set('drill-sub', cfg.sub); })));
+    controls.push(h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Notas por pulso'), segmented([{ value: 1, label: '1' }, { value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }], cfg.sub, (v) => { cfg.sub = Number(v); ctx.storage.set('drill-sub', cfg.sub); drawTab(); })));
     info.append(
       h('h2', { style: 'margin:0' }, d.title),
       h('p', {}, d.desc),
@@ -266,7 +248,7 @@ function mount(root, ctx) {
           mute: ev.art === 'M',
         });
         if (i % perBeat === 0) engine.click(time, { accent: (i / perBeat) % 4 === 0, sound: 'click', vol: 0.5 });
-        engine.at(time, () => columns.forEach((c, k) => c.forEach((el) => el.classList.toggle('is-now', k === i))));
+        engine.at(time, () => score.seekBeat(i));
         return true;
       },
     });
@@ -300,8 +282,8 @@ function mount(root, ctx) {
     h('div', { class: 'tool-grid' },
       h('section', { class: 'panel stack' }, h('h2', {}, 'Ejercicios'), list),
       h('div', { class: 'stack' },
-        h('section', { class: 'panel stack' }, info, h('div', { style: 'overflow-x:auto' }, tabBox),
-          h('p', { class: 'hint' }, '⊓ púa abajo · V púa arriba · h hammer-on · p pull-off · T tap · x silenciado.')),
+        h('section', { class: 'panel stack' }, info, scoreToolbar(score, { playback: false, stave: true }), tabBox,
+          h('p', { class: 'hint' }, 'Sobre cada nota: flecha de púa (abajo/arriba), dedo de la mano izquierda (1-4), ligado (arco), tap (T) y palm mute (P.M.). El cursor naranja sigue el ejercicio mientras suena.')),
         h('section', { class: 'panel stack' }, ladderBox, h('div', { class: 'row', style: 'justify-content:center' }, play.el)),
         h('section', { class: 'panel stack' }, historyBox),
       ),

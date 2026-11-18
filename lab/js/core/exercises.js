@@ -35,15 +35,21 @@ export function ladderPerString({ tuning, collection, position = 0, perString = 
   const ladder = [];
   let cursor = 0;
   for (let s = lowStringIndex; s >= 0; s -= 1) {
-    for (let i = 0; i < per; i += 1) {
+    let taken = 0;
+    for (;;) {
       const midi = pitches[cursor];
-      cursor += 1;
       if (midi == null) break;
+      // Si la siguiente nota no cabe en la cuerda de arriba (afinaciones con
+      // saltos grandes, como Drop D), se queda en esta cuerda.
+      const spill = s > 0 && midi < tuning[s - 1] && taken < per + 2;
+      if (taken >= per && !spill) break;
       const f = midi - tuning[s];
       if (f < 0 || f > maxFret) {
         return { ladder: ladder.length >= 5 ? ladder : [], start: startMidi, partial: true };
       }
       ladder.push({ s, f, midi });
+      cursor += 1;
+      taken += 1;
     }
   }
   return { ladder, start: startMidi, partial: false };
@@ -219,4 +225,61 @@ export function positionLabel(tuning, collection, position) {
   const start = starts[position % starts.length];
   const note = collection.noteByPc.get(start.pc);
   return { note, fret: start.f, count: starts.length };
+}
+
+/* ───────────── Patrones adicionales (biblioteca de ejercicios) ───────────── */
+
+Object.assign(PATTERNS, {
+  stepback: {
+    label: 'Paso atrás (1-2-3-2, 2-3-4-3…)',
+    build: (n) => flat(range(0, n - 2).map((i) => [i, i + 1, i + 2, i + 1])),
+  },
+  fives: {
+    label: 'Grupos de 5 (1-2-3-4-5, 2-3-4-5-6…)',
+    build: (n) => flat(range(0, n - 4).map((i) => [i, i + 1, i + 2, i + 3, i + 4])),
+  },
+  triadsIn: {
+    label: 'Tríadas diatónicas (1-3-5, 2-4-6…)',
+    build: (n) => flat(range(0, n - 4).map((i) => [i, i + 2, i + 4])),
+  },
+  sevenths: {
+    label: 'Séptimas diatónicas (1-3-5-7, 2-4-6-8…)',
+    build: (n) => flat(range(0, n - 6).map((i) => [i, i + 2, i + 4, i + 6])),
+  },
+  thirdsBack: {
+    label: 'Terceras descendentes (3-1, 4-2…)',
+    build: (n) => flat(range(0, n - 2).map((i) => [i + 2, i])),
+  },
+  sixths: {
+    label: 'Sextas melódicas (1-6, 2-7…)',
+    build: (n) => flat(range(0, n - 5).map((i) => [i, i + 5])),
+  },
+  sevenInt: {
+    label: 'Séptimas melódicas (1-7, 2-8…)',
+    build: (n) => flat(range(0, n - 6).map((i) => [i, i + 6])),
+  },
+  octaves: {
+    label: 'Octavas melódicas (1-8, 2-9…)',
+    build: (n) => flat(range(0, n - 7).map((i) => [i, i + 7])),
+  },
+});
+
+/** Variaciones melódicas de un intervalo de k grados: 'up' | 'back' | 'zigzag'. */
+export function intervalPattern(k, variant = 'up') {
+  return (n) => {
+    const out = [];
+    for (let i = 0; i + k < n; i += 1) {
+      if (variant === 'back') out.push(i + k, i);
+      else if (variant === 'zigzag') {
+        if (i + k + 1 < n) out.push(i, i + k, i + 1, i + k + 1);
+      } else out.push(i, i + k);
+    }
+    return out;
+  };
+}
+
+/** Ordena una lista {s,f,midi} por altura y quita duplicados de altura. */
+export function dedupeByPitch(notes) {
+  const sorted = [...notes].sort((a, b) => a.midi - b.midi || b.s - a.s);
+  return sorted.filter((n, i) => i === 0 || sorted[i - 1].midi !== n.midi);
 }

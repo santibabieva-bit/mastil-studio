@@ -9,6 +9,8 @@ import {
 } from '../core/licks.js';
 import { detectPitch } from '../core/pitch.js';
 import { Transport } from '../audio/transport.js';
+import { beatsToAlphaTex, lickToBeats } from '../core/alphatex.js';
+import { createScore, scoreToolbar } from '../ui/score.js';
 import { openMic } from '../audio/mic.js';
 import {
   button, clear, h, segmented, select, slider,
@@ -36,6 +38,9 @@ function mount(root, ctx) {
   let micTimer = 0;
   const buf = new Float32Array(2048);
   const stage = h('div', { class: 'stack' });
+  const scoreHost = h('div');
+  const lickScore = createScore(scoreHost, { stave: 'tab', cursor: false });
+  ctx.onCleanup(() => lickScore.destroy());
   const keyGrid = h('div', { class: 'key-grid' });
   const status = h('div', { class: 'feedback', hidden: true });
   const phase = h('div', { class: 'tempo-name', style: 'text-align:center;min-height:1.4em' }, '');
@@ -50,10 +55,16 @@ function mount(root, ctx) {
 
   function showMsg(text, kind = 'ok') { status.hidden = !text; status.className = `feedback ${kind}`; status.textContent = text; }
 
-  function tabView(lick) {
-    const cols = lick.notes;
-    const rows = STRING_NAMES.map((name, s) => h('div', { class: 'tab-row' }, h('span', { class: 'tab-label' }, name), ...cols.map(([ns, f]) => h('span', { class: `tab-cell ${ns === s ? 'has-note' : ''}` }, ns === s ? String(f) : '·'))));
-    return h('div', { class: 'drill-tab' }, h('div', { class: 'tab-line' }, ...rows));
+  /** Pinta el lick (en la tonalidad elegida) con alphaTab. */
+  function renderLick(lick, rootPc) {
+    const sub = lick.subdivision ?? 2;
+    lickScore.load(beatsToAlphaTex(lickToBeats(lick), {
+      title: lick.name,
+      subtitle: `${lick.style ?? ''} · en ${prettyNote(pcName(rootPc, 'sharp'))}`,
+      tempo: cfg.bpm,
+      tuning,
+      duration: { 1: 4, 2: 8, 4: 16 }[sub] ?? 8,
+    }));
   }
 
   function drawKeys() {
@@ -149,7 +160,8 @@ function mount(root, ctx) {
           h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Orden de tonalidades'), segmented([{ value: 'fifths', label: 'Círculo de quintas' }, { value: 'chromatic', label: 'Cromático' }], cfg.order, (v) => { cfg.order = v; cfg.index = 0; draw(); })),
         ),
         h('p', { class: 'hint' }, `En ${prettyNote(pcName(shown.rootPc, 'sharp'))}: ${lickToText(shown.notes)} (cuerda:traste; 1 = cuerda más aguda).`),
-        tabView(shown),
+        scoreToolbar(lickScore, { playback: false, stave: true }),
+        scoreHost,
         h('div', { class: 'row' }, button('🔊 Oír esta tonalidad', { variant: 'outline', onClick: previewKey })),
         h('h2', {}, 'Las 12 tonalidades'),
         keyGrid,
@@ -174,6 +186,7 @@ function mount(root, ctx) {
         h('p', { class: 'hint', id: 'lick-hint' }, 'Cada nota se escribe «cuerda:traste». La cuerda 1 es la más aguda. Se transpone en bloque, sin cambiar la digitación relativa.'),
       ),
     );
+    renderLick(shown, shown.rootPc);
   }
 
   function saveCustom() {

@@ -18,6 +18,11 @@ const MIME = {
   '.md': 'text/markdown; charset=utf-8',
   '.ico': 'image/x-icon',
   '.webmanifest': 'application/manifest+json; charset=utf-8',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.otf': 'font/otf',
+  '.sf2': 'application/octet-stream',
+  '.txt': 'text/plain; charset=utf-8',
 };
 
 function safePath(urlPath) {

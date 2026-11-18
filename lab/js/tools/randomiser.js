@@ -7,8 +7,9 @@ import { chordSymbol } from '../core/chords.js';
 import { generateRhythm, GROOVES, rhythmEvents, countLabels } from '../core/rhythm.js';
 import { PROGRESSION_PRESETS, randomProgression, resolveProgression } from '../core/progressions.js';
 import { CHALLENGES, TECH_OPTIONS, generateRiff, randomChallenge } from '../core/riff.js';
-import { tabToAscii, tabToJson } from '../core/tab.js';
-import { TabPlayer } from '../audio/tabplayer.js';
+import { tabToJson } from '../core/tab.js';
+import { tabToAlphaTex } from '../core/alphatex.js';
+import { createScore, scoreToolbar } from '../ui/score.js';
 import { guitarMidis } from '../audio/backing.js';
 import { button, clear, h, segmented, select, slider, toggle } from '../ui/dom.js';
 import { header, qualityChoices, rootChoices, safeCollection } from './common.js';
@@ -39,8 +40,8 @@ function mount(root, ctx) {
     last: null,
   };
   const body = h('div', { class: 'stack' });
-  const tabPlayer = new TabPlayer(engine, 'randomiser');
-  ctx.onCleanup(() => tabPlayer.stop());
+  let riffScore = null;
+  ctx.onCleanup(() => riffScore?.destroy());
   const std = TUNINGS.standard.midi;
 
   const common = () => h('section', { class: 'panel stack' }, h('h2', {}, 'Tonalidad'),
@@ -120,13 +121,17 @@ function mount(root, ctx) {
   function drawRiff() {
     const tab = st.last;
     clear(result);
-    const playBtn = button('▶ Oírlo', { variant: 'outline', onClick: () => { tabPlayer.stop(); tabPlayer.start(tab, { bpm: () => 100, loop: false, countIn: true }); } });
+    riffScore?.destroy();
+    const stage = h('div');
+    riffScore = createScore(stage, { stave: 'scoretab', onPlaying: (on) => engine.notePlaying('randomiser', on) });
     result.append(
       h('h2', {}, 'Tu riff'),
-      h('pre', { class: 'tab-view' }, tabToAscii(tab, 16)),
-      h('div', { class: 'row' }, playBtn, button('Editar en Tab Creator', { variant: 'accent', onClick: () => { ctx.storage.set('tab-handoff', tabToJson(tab)); ctx.go('tab', { handoff: 1 }); } })),
-      h('p', { class: 'hint' }, 'h = ligado ascendente · p = ligado descendente · / \\ = slide · b = bend · ~ = vibrato.'),
+      scoreToolbar(riffScore, { playback: true, stave: true }),
+      stage,
+      h('div', { class: 'row' }, button('Editar en Tab Creator', { variant: 'accent', onClick: () => { ctx.storage.set('tab-handoff', tabToJson(tab)); ctx.go('tab', { handoff: 1 }); } })),
+      h('p', { class: 'hint' }, 'Ligados (arco), slides, bends y vibrato se muestran sobre la tablatura. Pulsa «Reproducir» para oírlo con el cursor.'),
     );
+    riffScore.load(tabToAlphaTex(tab));
   }
 
   /* ─── Jam ─── */
@@ -202,7 +207,7 @@ function mount(root, ctx) {
     st.last = null;
   }
 
-  const modeSeg = segmented(MODES, st.mode, (v) => { tabPlayer.stop(); st.mode = v; ctx.setParams({ m: v }); drawOptions(); });
+  const modeSeg = segmented(MODES, st.mode, (v) => { riffScore?.destroy(); riffScore = null; st.mode = v; ctx.setParams({ m: v }); drawOptions(); });
   root.append(header('Tocar y escribir', 'Randomiser', 'Rompe el bloqueo: genera notas, ritmos, progresiones, riffs, ideas de jam y retos de práctica. Todo se puede abrir en el resto de herramientas.'), modeSeg, body);
   drawOptions();
 }

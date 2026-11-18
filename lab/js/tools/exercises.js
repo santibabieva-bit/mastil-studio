@@ -5,6 +5,8 @@ import {
   PATTERNS, buildSequence, ladderBox, ladderPerString, positionLabel, rootPosition, sweepSequence,
 } from '../core/exercises.js';
 import { tabFromSequence, tabToAscii, tabToJson } from '../core/tab.js';
+import { beatsToAlphaTex, durationForSub } from '../core/alphatex.js';
+import { createScore, scoreToolbar } from '../ui/score.js';
 import { coerce } from '../core/state.js';
 import { Transport } from '../audio/transport.js';
 import { clearPlaying, renderFretboard, setPlaying, hitFromEvent, flashNote } from '../ui/fretboard.js';
@@ -50,14 +52,16 @@ function mount(root, ctx) {
   let tuningMidi = getTuning(state.tuning).midi;
 
   const board = h('div', { class: 'fb-wrap' });
-  const tabBox = h('div', { class: 'tab-view', id: 'tab-out', 'aria-label': 'Tablatura del ejercicio' });
+  const tabBox = h('div', { id: 'tab-out', 'aria-label': 'Tablatura del ejercicio (alphaTab)' });
+  const score = createScore(tabBox, { stave: 'tab', cursor: false });
+  ctx.onCleanup(() => score.destroy());
   const meta = h('p', { class: 'hint' });
   const positionControls = h('div', { class: 'stack' });
   const transport = new Transport(engine, 'exercises');
   transport.onStop = () => {
     play.set(false);
     clearPlaying(board);
-    tabBox.querySelectorAll('.tab-now').forEach((el) => el.classList.remove('tab-now'));
+    score.seekBeat(0);
   };
   ctx.onCleanup(() => transport.stop());
 
@@ -96,23 +100,16 @@ function mount(root, ctx) {
   }
 
   function drawTab() {
-    const per = 12;
-    const parts = [];
-    const strings = tuningMidi.length;
-    const labels = strings === 6 ? ['e', 'B', 'G', 'D', 'A', 'E'] : Array.from({ length: strings }, (_, i) => String(i + 1));
-    for (let start = 0; start < sequence.length; start += per) {
-      const chunk = sequence.slice(start, start + per);
-      for (let s = 0; s < strings; s += 1) {
-        let line = `${labels[s].padEnd(2)}|`;
-        chunk.forEach((n, i) => {
-          const cell = (n.s === s ? String(n.f) : '').padEnd(3, '-');
-          line += `<span data-i="${start + i}">${cell}</span>`;
-        });
-        parts.push(`${line}|`);
-      }
-      parts.push('');
-    }
-    tabBox.innerHTML = parts.join('\n').trimEnd();
+    const beats = sequence.map((n) => ({ notes: [{ s: n.s, f: n.f, tech: [] }] }));
+    const { duration, tuplet } = durationForSub(state.sub);
+    score.load(beatsToAlphaTex(beats, {
+      title: safeCollection(state.root, state.family, state.quality).title,
+      subtitle: 'Ejercicio de secuencia',
+      tempo: state.bpm,
+      tuning: tuningMidi,
+      duration,
+      tuplet,
+    }));
   }
 
   function render() {
@@ -186,8 +183,7 @@ function mount(root, ctx) {
         engine.at(time, () => {
           clearPlaying(board);
           setPlaying(board, note.s, note.f, true);
-          tabBox.querySelectorAll('.tab-now').forEach((el) => el.classList.remove('tab-now'));
-          tabBox.querySelectorAll(`[data-i="${n}"]`).forEach((el) => el.classList.add('tab-now'));
+          score.seekBeat(n);
         });
         return true;
       },
@@ -219,7 +215,7 @@ function mount(root, ctx) {
         ),
         h('section', { class: 'panel stack' }, h('h2', {}, 'Reproducción'),
           slider({ min: 40, max: 220, value: state.bpm, label: 'Tempo', format: (v) => `${v} bpm`, onInput: (v) => { state.bpm = v; ctx.setParams({ bpm: v }); } }),
-          h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Subdivisión'), segmented(SUBS, state.sub, (v) => { state.sub = Number(v); ctx.setParams({ sub: v }); })),
+          h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Subdivisión'), segmented(SUBS, state.sub, (v) => { state.sub = Number(v); ctx.setParams({ sub: v }); drawTab(); })),
           toggle('Repetir en bucle', state.loop, (v) => { state.loop = v; }),
           toggle('Cuenta previa de un compás', state.countIn, (v) => { state.countIn = v; }),
           toggle('Click en cada pulso', state.click, (v) => { state.click = v; }),
@@ -229,6 +225,7 @@ function mount(root, ctx) {
       h('div', { class: 'stack' },
         h('section', { class: 'panel' }, board, meta),
         h('section', { class: 'panel' },
+          scoreToolbar(score, { playback: false, stave: true }),
           h('div', { class: 'row row--between' }, h('h2', {}, 'Tablatura'),
             h('div', { class: 'row no-print' },
               button('Copiar', { variant: 'outline', onClick: async () => ctx.toast((await copyText(asciiText())) ? 'Tab copiada' : 'No se pudo copiar') }),

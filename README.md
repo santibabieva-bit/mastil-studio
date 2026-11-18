@@ -39,6 +39,7 @@ Además del generador de plantillas, el repo incluye **Mástil Lab**, un estudio
 | | **Drills técnicos** | 11 ejercicios (púa alterna, cruce de cuerdas, economy, sweep, legato, trino, saltos de cuerda, independencia con las 24 permutaciones, hybrid, tapping, palm muting) con **escalera de velocidad** (sube el tempo sólo con N repeticiones limpias), práctica en ráfagas, detección de estancamiento y récords por ejercicio |
 | | **Autograbación** | Grábate (audio o vídeo) y revisa la toma a 50/75 % con forma de onda; no sale de tu navegador |
 | | **Audio Lab** | Tus propias canciones: velocidad 25–150 % sin cambiar el tono, bucle A-B con forma de onda, subida de velocidad por vuelta, cuenta previa, marcadores y **transcripción asistida** (acorde probable del tramo y progresión aproximada) |
+| | **Biblioteca de ejercicios** | 45 ejercicios de digitación que se generan en cualquier tonalidad, posición y afinación: **permutaciones de dedos** (las 24 de 1-2-3-4 sobre la escala y cromáticas, y de 3 notas), **secuencias de escala** (18 patrones: terceras, grupos, tríadas y séptimas diatónicas…), **pentatónica y blues** (cajas, patrones y las cinco cajas encadenadas), **intervalos melódicos** (3.ª a 8.ª), **dobles cuerdas** (terceras, sextas, octavas… a la vez o arpegiadas), arpegios por posiciones y **legato**. Con dedos sugeridos (1-4), partitura + tab de alphaTab que suenan con cursor |
 | | **Exercise Generator** | Secuencias (terceras, grupos, zigzag, sweep…) sobre escalas/arpegios con tab, bucle, cuenta previa y metrónomo |
 | | **Metrónomo y caja de ritmos** | Acentos por pulso, subdivisiones, swing, entrenador de velocidad, compases en silencio, temporizador, tap tempo y caja de ritmos de 16 pasos |
 | | **Strum Trainer** | Patrones de rasgueo con acentos, apagados y silencios sobre tus acordes |
@@ -48,13 +49,16 @@ Además del generador de plantillas, el repo incluye **Mástil Lab**, un estudio
 | Tocar y escribir | **Jam Studio** | La base suena y el mástil sigue los acordes: escala sugerida por acorde (dórica sobre ii, mixolidia sobre V, blues…), notas 1-3-5-7 en color, aviso del siguiente cambio, enfoque escala/pentatónica/acorde/tríada/arpegio, retos de aterrizaje puntuados con micrófono o MIDI, tempo progresivo, compases en silencio y bucle de sección; 14 progresiones |
 | | **Licks y respuesta** | Frases (7 de ejemplo + los tuyos) transpuestas a las 12 tonalidades por el círculo de quintas, en llamada y respuesta con evaluación opcional por micrófono |
 | | **Backing Track Creator** | Batería, bajo, guitarra y sinte sobre una progresión editable; 11 grooves (rock, pop, funk, shuffle, jazz, bossa, country, reggae, balada, 3/4, 6/8, 12/8); guarda tus bases y expórtalas a MIDI |
-| | **Tab Creator** | Rejilla con ligados, slides, bends, vibrato, armónicos; reproducción, importar/exportar texto, PDF, **MIDI y MusicXML** |
+| | **Tab Creator** | Rejilla con ligados, slides, bends, vibrato, armónicos; reproducción, importar/exportar texto, PDF, **MIDI y MusicXML**; vista **Partitura** con alphaTab (la tab se pinta como pentagrama + tablatura y se toca con cursor) |
+| | **Partitura (alphaTab)** | Editor de **alphaTex** con render en vivo, **abre Guitar Pro (.gp/.gp5/.gpx) y MusicXML**, reproducción con cursor, bucle, metrónomo, cuenta previa y velocidad, exporta MIDI; convierte a/desde la rejilla del Tab Creator |
 | | **Randomiser** | Notas, ritmos, progresiones por complejidad, riffs con tab, ideas de jam y retos |
 | | **Capo & Transpose** | Transposición y la cejilla con las formas abiertas más fáciles |
 | Oído y afinación | **Ear Trainer** | Intervalos y calidades de acorde con guitarra o piano; repite lo que fallas |
 | | **EQ Trainer** | Identifica qué banda de frecuencias se ha realzado o recortado en una base |
 | | **Guitar Tuner** | Afinador por micrófono (autocorrelación) con detección de cuerda |
 | Referencia | **Referencias rápidas** | Escalas en las 12 tonalidades, acordes por tonalidad, afinaciones y círculo de quintas |
+
+**Todas las tablaturas se pintan con alphaTab** (Drills, Exercise Generator, Biblioteca de ejercicios, Licks, Randomiser, Tab Creator y Partitura): flechas de púa, dedos, ligados, tap, palm mute y un cursor que sigue el ejercicio mientras suena. El modo «Texto» del Tab Creator se conserva sólo para copiar/exportar.
 
 Las herramientas están conectadas: «Practica esto» en el Navigator abre los ejercicios, el backing o el quiz con la misma tonalidad, y el Randomiser envía progresiones y riffs al Backing y al Tab Creator. El audio es síntesis pura (Karplus-Strong para la guitarra, osciladores y ruido para batería, bajo y pad), sin muestras.
 
@@ -65,6 +69,7 @@ lab/js/core/                  Lógica pura y testeable: música, acordes, ritmo,
 lab/js/audio/                 Motor WebAudio, transporte con anticipación, reproductores de backing y tab
 lab/js/ui/                    Mástil SVG interactivo, diagramas de acorde, exportación, helpers DOM
 lab/js/tools/                 Una pantalla por herramienta
+lab/vendor/alphatab/          alphaTab 1.9.0 (MPL-2.0) en copia local: render, fuente Bravura y soundfont, para usarlo sin conexión
 ```
 
 ## Probar
@@ -80,7 +85,7 @@ Abrir `http://127.0.0.1:4173`.
 No hay dependencias de runtime ni proceso de build: el servidor sólo sirve archivos estáticos y el navegador ejecuta módulos ES.
 
 ```bash
-npm test       # 131 pruebas: teoría, parser, CAGED, voicings, digitaciones, SVG y el núcleo del Lab (jam, tríadas, MIDI, repaso espaciado, rutinas)
+npm test       # 146 pruebas: teoría, parser, CAGED, voicings, digitaciones, SVG y el núcleo del Lab (jam, tríadas, MIDI, repaso espaciado, rutinas, biblioteca de ejercicios y alphaTex)
 npm run precache  # regenera lab/precache.json (lista del modo sin conexión) tras añadir archivos al Lab
 npm run export # regenera los SVG de ejemplo en output/
 ```

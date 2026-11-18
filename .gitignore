@@ -5,3 +5,9 @@ versions/
 audit/stage/
 audit/*.zip
 output/*-qa.png
+.venv-sep/
+.venv-tab/
+models/
+stems/
+torch_models/
+__pycache__/

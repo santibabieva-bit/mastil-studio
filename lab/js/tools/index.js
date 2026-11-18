@@ -27,6 +27,8 @@ import bendlab from './bendlab.js';
 import recorder from './recorder.js';
 import licks from './licks.js';
 import blind from './blind.js';
+import score from './score.js';
+import exlib from './exlib.js';
 
 export const GROUPS = [
   { id: 'neck', label: 'Aprender el mástil' },
@@ -38,8 +40,8 @@ export const GROUPS = [
 
 export const TOOLS = [
   navigator, blind, triads, quiz, chords,
-  routine, drills, timing, exercises, audiolab, recorder, metronome, strum, rhythm, vibrato, log,
-  jam, backing, tab, licks, randomiser, capo,
+  routine, drills, timing, exlib, exercises, audiolab, recorder, metronome, strum, rhythm, vibrato, log,
+  jam, backing, tab, score, licks, randomiser, capo,
   ear, eq, bendlab, tuner,
   reference,
 ];

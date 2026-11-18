@@ -17,6 +17,8 @@ export function precacheList() {
   const files = [
     ...['index.html', 'lab.css', 'manifest.webmanifest', 'icon.svg'].map((f) => join(lab, f)),
     ...walk(join(lab, 'js'), ['.js']),
+    // alphaTab (copia local): módulos, fuente musical y soundfont para tocar sin conexión.
+    ...walk(join(lab, 'vendor'), ['.mjs', '.woff2', '.woff', '.sf2']),
     ...walk(join(ROOT, 'src'), ['.js']),
   ];
   return files
