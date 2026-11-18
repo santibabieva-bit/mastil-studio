@@ -144,10 +144,23 @@ export function beatsToAlphaTex(beats, o = {}) {
   beats.forEach(emit);
   // Completa el último compás con silencios.
   if (padLastBar && acc > 0.01) {
-    const count = Math.round((barTicks - acc) / beatTicks(16));
-    if (count > 0) {
-      out.push(':16');
-      for (let i = 0; i < count; i += 1) out.push('r');
+    // Silencios lo más largos posible que respeten la cuadrícula del compás
+    // (por ejemplo 1 semicorchea + 1 corchea + 1 negra + 1 blanca, no 15 semicorcheas).
+    let pos = Math.round(acc);
+    let left = Math.round(barTicks) - pos;
+    const rests = [];
+    while (left > 0) {
+      const d = [1, 2, 4, 8, 16, 32].find((n) => {
+        const t = beatTicks(n);
+        return t <= left && pos % t === 0;
+      });
+      if (!d) break;
+      rests.push(d);
+      pos += beatTicks(d);
+      left -= beatTicks(d);
+    }
+    if (rests.length) {
+      for (const d of rests) out.push(`:${d} r`);
       out.push('|');
     }
   }
