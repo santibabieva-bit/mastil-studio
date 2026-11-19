@@ -34,12 +34,24 @@ function balance(totals, tools) {
  * @param {Array<{key:string,rate:number}>} [o.weak] puntos débiles del quiz
  * @param {object} [o.totals] minutos por herramienta
  */
-export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {}, due = 0, focus = null, rng = Math.random }) {
+/** Elige un elemento evitando los usados recientemente (variación deliberada). */
+function pickFresh(list, rng, recent, key = (x) => x) {
+  const fresh = list.filter((x) => !recent.includes(key(x)));
+  return pick(fresh.length ? fresh : list, rng);
+}
+
+/**
+ * @param {Array<{id,label,tool,params}>} [o.objectives] objetivos del currículo para hoy (se intercalan)
+ * @param {string[]} [o.recent] ids de drills/progresiones usados en sesiones recientes
+ */
+export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {}, due = 0, focus = null, objectives = [], recent = [], rng = Math.random }) {
   const full = Math.max(10, Math.min(120, Math.round(minutes)));
   // Sesiones largas: 3 minutos finales de estiramiento y vuelta a la calma.
   const cooldown = full >= 30 ? 3 : 0;
   const total = full - cooldown;
-  const weights = BASE.map((b) => {
+  const objective = objectives[0] ?? null;
+  const base = objective ? [{ id: 'objective', weight: 0.28, tools: [objective.tool] }, ...BASE] : BASE;
+  const weights = base.map((b) => {
     let w = b.weight * (0.6 + 0.8 * balance(totals, b.tools));
     if (focus && b.id === focus) w *= 1.8;
     if (b.id === 'theory' && (weak.length || due > 0)) w *= 1.5;
@@ -57,7 +69,7 @@ export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {},
   }
   const bonus = small.reduce((s, b) => s + b.min, 0);
   if (keep.length) keep.sort((a, b) => b.min - a.min)[0].min += bonus;
-  blocks = BASE.map((b) => keep.find((k) => k.id === b.id)).filter(Boolean);
+  blocks = base.map((b) => keep.find((k) => k.id === b.id)).filter(Boolean);
   // Ajusta el redondeo para que sume exactamente `total`.
   let diff = total - blocks.reduce((s, b) => s + b.min, 0);
   let i = 0;
@@ -68,11 +80,13 @@ export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {},
     if (i > 500) break;
   }
   const [famA, qualA] = pick(SCALES, rng);
-  const jamId = pick(JAMS, rng);
+  const jamId = pickFresh(JAMS, rng, recent);
   const triadType = pick(TRIAD_TYPES, rng);
-  const drill = pick(DRILL_LIST, rng);
+  const drill = pickFresh(DRILL_LIST, rng, recent, (d) => d.id);
   const out = blocks.map((b) => {
     switch (b.id) {
+      case 'objective':
+        return { id: b.id, minutes: b.min, tool: objective.tool, title: `Objetivo: ${objective.label}`, params: objective.params ?? {}, why: objective.how ?? 'Siguiente puerta de tu currículo.', objective: objective.id };
       case 'warmup':
         return { id: b.id, minutes: b.min, tool: 'metronome', title: 'Calentamiento', params: { bpm: 70 }, why: 'Manos sueltas: notas lentas y limpias con el metrónomo. Hombros bajos, muñecas rectas y respira.' };
       case 'technique':
@@ -91,6 +105,15 @@ export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {},
         return { id: b.id, minutes: b.min, tool: 'ear', title: 'Oído', params: {}, why: 'Intervalos y acordes de oído.' };
     }
   });
+  // Práctica intercalada: el objetivo se parte en dos tandas separadas por otros temas.
+  const oi = out.findIndex((b) => b.id === 'objective');
+  if (oi >= 0 && out[oi].minutes >= 10 && out.length >= 3) {
+    const half = Math.floor(out[oi].minutes / 2);
+    const first = { ...out[oi], minutes: out[oi].minutes - half, title: `${out[oi].title} (1/2)` };
+    const second = { ...out[oi], id: 'objective-2', minutes: half, title: `${out[oi].title} (2/2)`, why: 'Segunda tanda: tras trabajar otros temas, recordarlo cuesta un poco y eso fija lo aprendido.' };
+    out.splice(oi, 1, first);
+    out.push(second);
+  }
   if (cooldown) out.push({ id: 'cooldown', minutes: cooldown, tool: 'metronome', title: 'Vuelta a la calma', params: { bpm: 60 }, why: 'Toca algo lento y relajado y estira muñecas y dedos. Si notas dolor, para: no se toca a través del dolor.' });
   return { total: full, blocks: out };
 }

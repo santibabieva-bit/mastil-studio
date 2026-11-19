@@ -12,6 +12,9 @@ export const SKILL_AXES = [
   { id: 'pitch', label: 'Afinación', tool: 'bendlab', hint: 'Practica bends y vibrato con feedback del micrófono.' },
   { id: 'theory', label: 'Teoría', tool: 'quiz', hint: 'Responde preguntas en el Theory Trainer.' },
   { id: 'speed', label: 'Velocidad', tool: 'drills', hint: 'Sube tu récord en la escalera de velocidad.' },
+  { id: 'ear', label: 'Oído', tool: 'earplay', hint: 'Toca de oído melodías cortas en «Toca lo que oyes».' },
+  { id: 'improv', label: 'Improvisación', tool: 'jam', hint: 'Sube de nivel en el reto de aterrizaje del Jam Studio.' },
+  { id: 'repertoire', label: 'Repertorio', tool: 'repertoire', hint: 'Lleva una canción a su tempo y apréndela de memoria.' },
   { id: 'consistency', label: 'Constancia', tool: 'routine', hint: 'Genera una rutina y practica unos minutos cada día.' },
 ];
 
@@ -25,7 +28,9 @@ const avg = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : nul
  * @param {Record<string,{best:number}>} data.speed historial de velocidad
  * @param {object} data.practice estado de práctica
  */
-export function skillRadar({ timing = [], pitch = [], quiz = null, speed = {}, practice = null }) {
+export function skillRadar({
+  timing = [], pitch = [], quiz = null, speed = {}, practice = null, earplay = [], jam = [], songs = [],
+}) {
   const recent = (list) => list.slice(-5).map((x) => x.score);
   const t = avg(recent(timing));
   const p = avg(recent(pitch));
@@ -39,7 +44,24 @@ export function skillRadar({ timing = [], pitch = [], quiz = null, speed = {}, p
     const days = Object.keys(practice.days ?? {}).length ? daysPracticed(practice) : 0;
     consistency = Math.min(100, (days / 30) * 100 * 1.4);
   }
-  const raw = { timing: t, pitch: p, theory, speed: speedScore, consistency };
+  // Oído: tasa de melodías completadas con ≥ 60 % a la primera, ponderada por nivel.
+  const earRuns = earplay.slice(-10);
+  const ear = earRuns.length >= 3
+    ? (earRuns.filter((r) => r.ok && r.firstTry >= Math.ceil(r.total * 0.6)).length / earRuns.length) * 100 * (0.7 + 0.1 * Math.max(...earRuns.map((r) => r.level)))
+    : null;
+  // Improvisación: % de aterrizajes en las últimas sesiones, con un bonus por el nivel del reto.
+  const jamRuns = jam.slice(0, 5);
+  const jamTotal = jamRuns.reduce((a, r) => a + r.total, 0);
+  const levelBonus = { root: 0.6, chord: 0.75, third: 0.85, seventh: 0.92, guide: 1, tension: 1 };
+  const improv = jamTotal >= 8
+    ? (jamRuns.reduce((a, r) => a + r.hits, 0) / jamTotal) * 100 * Math.max(...jamRuns.map((r) => levelBonus[r.level ?? 'chord'] ?? 0.75))
+    : null;
+  const repertoire = songs.length
+    ? (songs.reduce((a, x) => a + (x.status === 'memorized' ? 1 : x.status === 'tempo' ? 0.66 : 0.25 * Math.min(1, x.sections.reduce((m, sec) => m + sec.bpm / x.targetBpm, 0) / Math.max(1, x.sections.length))), 0) / songs.length) * 100
+    : null;
+  const raw = {
+    timing: t, pitch: p, theory, speed: speedScore, ear, improv, repertoire, consistency,
+  };
   return SKILL_AXES.map((axis) => ({ ...axis, value: raw[axis.id] == null ? null : clamp(raw[axis.id]) }));
 }
 

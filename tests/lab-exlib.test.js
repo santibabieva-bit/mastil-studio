@@ -50,7 +50,7 @@ test('todos los ejercicios generan notas válidas en varias tonalidades y direcc
 test('los ejercicios de escala sólo usan notas de la escala (todas las calidades y posiciones)', () => {
   for (const quality of ['major', 'naturalMinor', 'dorian', 'mixolydian', 'harmonicMinor']) {
     const col = createNoteCollection('D', 'scale', quality);
-    for (const ex of EXERCISES.filter((e) => e.needsPosition && e.family !== 'pent')) {
+    for (const ex of EXERCISES.filter((e) => e.needsPosition && e.family !== 'pent' && !e.chromatic)) {
       for (let position = 0; position < 7; position += 1) {
         const r = buildExercise(ex.id, { tuning: STD, root: 'D', quality, position, direction: 'updown', variant: 2 });
         for (const b of r.beats) for (const n of b.notes) assert.ok(col.noteByPc.has(mod(n.midi, 12)), `${ex.id} ${quality} pos ${position}`);

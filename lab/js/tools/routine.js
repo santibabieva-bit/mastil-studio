@@ -11,9 +11,11 @@ import { dueCount } from '../core/srs.js';
 import { emptyStats, weakSpots } from '../core/quiz.js';
 import { nextFocus, skillRadar } from '../core/skills.js';
 import { button, clear, h, segmented, select } from '../ui/dom.js';
+import { todayObjectives } from '../core/curriculum.js';
 import { header } from './common.js';
+import { collectProgress } from './curriculum.js';
 
-const TOOL_LABEL = { metronome: 'Metrónomo', exercises: 'Ejercicios', drills: 'Drills', timing: 'Timing Lab', bendlab: 'Bends y vibrato', triads: 'Triad Lab', quiz: 'Theory Trainer', jam: 'Jam Studio', ear: 'Ear Trainer', backing: 'Backing' };
+const TOOL_LABEL = { earplay: 'Toca lo que oyes', repertoire: 'Repertorio', curriculum: 'Ruta', exlib: 'Biblioteca', blind: 'Mástil a ciegas', metronome: 'Metrónomo', exercises: 'Ejercicios', drills: 'Drills', timing: 'Timing Lab', bendlab: 'Bends y vibrato', triads: 'Triad Lab', quiz: 'Theory Trainer', jam: 'Jam Studio', ear: 'Ear Trainer', backing: 'Backing' };
 
 function mount(root, ctx) {
   const today = dateKey();
@@ -41,9 +43,12 @@ function mount(root, ctx) {
       quiz: ctx.storage.get('quiz-stats', null),
       speed: ctx.storage.get('speed-history', {}),
       practice: ctx.practice.state,
+      earplay: ctx.storage.get('earplay-history', []),
+      jam: ctx.storage.get('jam-scores', []),
+      songs: ctx.storage.get('repertoire', []),
     });
     const f = nextFocus(radar);
-    return { timing: 'timing', pitch: 'pitch', theory: 'theory', speed: 'technique' }[f.id] ?? null;
+    return { timing: 'timing', pitch: 'pitch', theory: 'theory', speed: 'technique', ear: 'ear', improv: 'jam' }[f.id] ?? null;
   }
 
   function generate() {
@@ -55,7 +60,12 @@ function mount(root, ctx) {
       due: dueCount(stats.srs),
       totals: totalsByTool(ctx.practice.state),
       focus: focusBlock(),
+      objectives: todayObjectives(collectProgress(ctx), 2),
+      recent: ctx.storage.get('routine-recent', []),
     });
+    // Variación deliberada: recuerda lo usado en las últimas sesiones para no repetirlo.
+    const used = cfg.plan.blocks.map((b) => b.params?.drill ?? b.params?.prog).filter(Boolean);
+    ctx.storage.set('routine-recent', [...used, ...ctx.storage.get('routine-recent', [])].slice(0, 8));
     cfg.done = [];
     stopTimer();
     persist();

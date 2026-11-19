@@ -25,35 +25,38 @@ ZIPs: [v1.0](versions/mastil-studio-v1.0.zip) · [v1.1](versions/mastil-studio-v
 
 ## Mástil Lab (nuevo)
 
-Además del generador de plantillas, el repo incluye **Mástil Lab**, un estudio de guitarra interactivo en `http://127.0.0.1:4173/lab/`: 27 herramientas que suenan, preguntan y recuerdan lo que practicas. Todo funciona en el navegador, sin cuentas ni dependencias; el progreso se guarda en `localStorage` y, tras la primera visita, **funciona sin conexión** (instalable como app).
+Además del generador de plantillas, el repo incluye **Mástil Lab**, un estudio de guitarra interactivo en `http://127.0.0.1:4173/lab/`: 30 herramientas que suenan, preguntan y recuerdan lo que practicas. Todo funciona en el navegador, sin cuentas ni dependencias; el progreso se guarda en `localStorage` y, tras la primera visita, **funciona sin conexión** (instalable como app).
 
 | Grupo | Herramienta | Qué hace |
 |---|---|---|
 | Aprender el mástil | **Fretboard Navigator** | Mástil de hasta 24 trastes con audio al pulsar, entrada MIDI (lo que tocas se ilumina), 14 afinaciones (incluye bajo y 7 cuerdas), modo zurdo, posiciones «N por cuerda», cajas, CAGED, voicings e inversiones, etiquetas (nombre, Do-Re-Mi, grado), exportar PNG/SVG y enlace compartible |
 | | **Triad Lab** | Tríadas y cuatríadas por juegos de cuerdas e inversiones, acorde sobre su escala, arpegios por posición con dedos, conducción de voces (camino de mínimo movimiento entre acordes), superposición de dos acordes y lámina CAGED de 5 mástiles imprimible |
 | | **Mástil a ciegas** | La app pide una nota en una cuerda y tú la encuentras sin ver el mástil; respuesta por micrófono, guitarra MIDI o manual, rondas de 10 con tiempo medio |
-| | **Theory Trainer** | Quizzes de notas del mástil, encontrar la nota, intervalos, acordes de la tonalidad, números romanos, modos y armaduras; 3 niveles, modo 2 minutos, puntos débiles y **repaso espaciado** (cajas de 1–32 días) |
+| | **Theory Trainer** | Quizzes de notas del mástil, encontrar la nota, intervalos, acordes de la tonalidad, números romanos, modos, armaduras y **armonía funcional** (dominantes secundarios, intercambio modal, sustituto tritonal); 3 niveles, modo 2 minutos, puntos débiles y **repaso espaciado** (cajas de 1–32 días) |
 | | **Chord & Key Finder** | Nombra un acorde a partir de sus notas, muestra sus formas, lista los acordes de cualquier tonalidad/modo y deduce la tonalidad de una canción |
-| Practicar | **Rutina guiada** | Sesión a medida (15–90 min) con bloques cronometrados; da más peso a tus puntos débiles, a las tarjetas vencidas y a lo que menos practicas |
+| Practicar | **Ruta de aprendizaje** | Cinco niveles con puertas medibles (mástil, pulso, aterrizajes, oído, repertorio, velocidad…): lee lo que has practicado, te dice qué toca ahora y alimenta la rutina diaria. Las competencias que el micrófono no puede medir con fiabilidad se confirman a mano |
+| | **Rutina guiada** | Sesión a medida (15–90 min) con bloques cronometrados; incluye el objetivo de tu ruta partido en dos tandas (práctica intercalada), evita repetir lo usado en sesiones recientes y da más peso a tus puntos débiles y a las tarjetas vencidas |
+| | **Repertorio** | Canciones con estado (aprendiendo → a tempo → de memoria), práctica por secciones con tempo creciente (arranca al 60 %) y repaso espaciado |
 | | **Timing Lab** | Mide tu pulso con el micrófono: desviación de cada nota en ms, histograma, tendencia a adelantarte o arrastrar, modo «sólo la cuenta» (pulso interno), calibración de latencia e historial |
-| | **Drills técnicos** | 11 ejercicios (púa alterna, cruce de cuerdas, economy, sweep, legato, trino, saltos de cuerda, independencia con las 24 permutaciones, hybrid, tapping, palm muting) con **escalera de velocidad** (sube el tempo sólo con N repeticiones limpias), práctica en ráfagas, detección de estancamiento y récords por ejercicio |
+| | **Drills técnicos** | 11 ejercicios (púa alterna, cruce de cuerdas, economy, sweep, legato, trino, saltos de cuerda, independencia con las 24 permutaciones, hybrid, tapping, palm muting) con **escalera de velocidad** (sube el tempo sólo con N repeticiones limpias), práctica en ráfagas, detección de estancamiento y récords por ejercicio; al fallar eliges el motivo (digitación, cruce de cuerdas, púa, tempo, tensión) y la app diagnostica el patrón y propone bajar el tempo o un drill específico |
 | | **Autograbación** | Grábate (audio o vídeo) y revisa la toma a 50/75 % con forma de onda; no sale de tu navegador |
 | | **Audio Lab** | Tus propias canciones: velocidad 25–150 % sin cambiar el tono, bucle A-B con forma de onda, subida de velocidad por vuelta, cuenta previa, marcadores y **transcripción asistida** (acorde probable del tramo y progresión aproximada) |
-| | **Biblioteca de ejercicios** | 45 ejercicios de digitación que se generan en cualquier tonalidad, posición y afinación: **permutaciones de dedos** (las 24 de 1-2-3-4 sobre la escala y cromáticas, y de 3 notas), **secuencias de escala** (18 patrones: terceras, grupos, tríadas y séptimas diatónicas…), **pentatónica y blues** (cajas, patrones y las cinco cajas encadenadas), **intervalos melódicos** (3.ª a 8.ª), **dobles cuerdas** (terceras, sextas, octavas… a la vez o arpegiadas), arpegios por posiciones y **legato**. Con dedos sugeridos (1-4), partitura + tab de alphaTab que suenan con cursor |
+| | **Biblioteca de ejercicios** | 52 ejercicios de digitación que se generan en cualquier tonalidad, posición y afinación: **permutaciones de dedos** (las 24 de 1-2-3-4 sobre la escala y cromáticas, y de 3 notas), **secuencias de escala** (18 patrones: terceras, grupos, tríadas y séptimas diatónicas…), **pentatónica y blues** (cajas, patrones y las cinco cajas encadenadas), **intervalos melódicos** (3.ª a 8.ª), **dobles cuerdas** (terceras, sextas, octavas… a la vez o arpegiadas), arpegios por posiciones, **legato** y **aproximaciones y enclosures** (cromática desde abajo/arriba y cuatro tipos de envolvente sobre las notas 1-3-5-7). Con dedos sugeridos (1-4), partitura + tab de alphaTab que suenan con cursor |
 | | **Exercise Generator** | Secuencias (terceras, grupos, zigzag, sweep…) sobre escalas/arpegios con tab, bucle, cuenta previa y metrónomo |
 | | **Metrónomo y caja de ritmos** | Acentos por pulso, subdivisiones, swing, entrenador de velocidad, compases en silencio, temporizador, tap tempo y caja de ritmos de 16 pasos |
 | | **Strum Trainer** | Patrones de rasgueo con acentos, apagados y silencios sobre tus acordes |
 | | **Rhythm Trainer** | Ritmos aleatorios, modo «de memoria» y medición de tus toques con la barra espaciadora |
 | | **Vibrato Trainer** | Nota sostenida que sube y baja al compás, con entrenador de velocidad |
 | | **Practice Log** | Minutos por día (automático + manual), racha, meta diaria y semanal, 16 semanas, 16 logros, notas y copia de seguridad completa (JSON) |
-| Tocar y escribir | **Jam Studio** | La base suena y el mástil sigue los acordes: escala sugerida por acorde (dórica sobre ii, mixolidia sobre V, blues…), notas 1-3-5-7 en color, aviso del siguiente cambio, enfoque escala/pentatónica/acorde/tríada/arpegio, retos de aterrizaje puntuados con micrófono o MIDI, tempo progresivo, compases en silencio y bucle de sección; 14 progresiones |
+| Tocar y escribir | **Jam Studio** | La base suena y el mástil sigue los acordes: escala sugerida por acorde (dórica sobre ii, mixolidia sobre V, blues…), notas 1-3-5-7 en color, aviso del siguiente cambio, enfoque escala/pentatónica/acorde/tríada/arpegio/**voces guía (3.ª y 7.ª)** con la línea de menor movimiento de la progresión, **reto de aterrizaje en 6 niveles** (tónica → 3.ª → 7.ª → voces guía → tensiones 9/13/♯11) puntuado con micrófono o MIDI, reharmonizaciones del II–V–I (sustitución tritonal, dominante secundario, puerta trasera), tempo progresivo, compases en silencio y bucle de sección; 14 progresiones |
 | | **Licks y respuesta** | Frases (7 de ejemplo + los tuyos) transpuestas a las 12 tonalidades por el círculo de quintas, en llamada y respuesta con evaluación opcional por micrófono |
 | | **Backing Track Creator** | Batería, bajo, guitarra y sinte sobre una progresión editable; 11 grooves (rock, pop, funk, shuffle, jazz, bossa, country, reggae, balada, 3/4, 6/8, 12/8); guarda tus bases y expórtalas a MIDI |
 | | **Tab Creator** | Rejilla con ligados, slides, bends, vibrato, armónicos; reproducción, importar/exportar texto, PDF, **MIDI y MusicXML**; vista **Partitura** con alphaTab (la tab se pinta como pentagrama + tablatura y se toca con cursor) |
 | | **Partitura (alphaTab)** | Editor de **alphaTex** con render en vivo, **abre Guitar Pro (.gp/.gp5/.gpx) y MusicXML**, reproducción con cursor, bucle, metrónomo, cuenta previa y velocidad, exporta MIDI; convierte a/desde la rejilla del Tab Creator |
 | | **Randomiser** | Notas, ritmos, progresiones por complejidad, riffs con tab, ideas de jam y retos |
 | | **Capo & Transpose** | Transposición y la cejilla con las formas abiertas más fáciles |
-| Oído y afinación | **Ear Trainer** | Intervalos y calidades de acorde con guitarra o piano; repite lo que fallas |
+| Oído y afinación | **Toca lo que oyes** | Suena una melodía corta (3–6 notas, 4 niveles) y la encuentras en el mástil de oído; se valida con micrófono, guitarra MIDI o a mano |
+| | **Ear Trainer** | Intervalos y calidades de acorde con guitarra o piano; repite lo que fallas |
 | | **EQ Trainer** | Identifica qué banda de frecuencias se ha realzado o recortado en una base |
 | | **Guitar Tuner** | Afinador por micrófono (autocorrelación) con detección de cuerda |
 | Referencia | **Referencias rápidas** | Escalas en las 12 tonalidades, acordes por tonalidad, afinaciones y círculo de quintas |
@@ -85,7 +88,7 @@ Abrir `http://127.0.0.1:4173`.
 No hay dependencias de runtime ni proceso de build: el servidor sólo sirve archivos estáticos y el navegador ejecuta módulos ES.
 
 ```bash
-npm test       # 146 pruebas: teoría, parser, CAGED, voicings, digitaciones, SVG y el núcleo del Lab (jam, tríadas, MIDI, repaso espaciado, rutinas, biblioteca de ejercicios y alphaTex)
+npm test       # 184 pruebas: teoría, parser, CAGED, voicings, digitaciones, SVG y el núcleo del Lab (jam, tríadas, MIDI, repaso espaciado, rutinas, biblioteca de ejercicios y alphaTex)
 npm run precache  # regenera lab/precache.json (lista del modo sin conexión) tras añadir archivos al Lab
 npm run export # regenera los SVG de ejemplo en output/
 ```

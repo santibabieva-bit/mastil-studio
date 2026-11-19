@@ -29,6 +29,9 @@ import licks from './licks.js';
 import blind from './blind.js';
 import score from './score.js';
 import exlib from './exlib.js';
+import earplay from './earplay.js';
+import repertoire from './repertoire.js';
+import curriculum from './curriculum.js';
 
 export const GROUPS = [
   { id: 'neck', label: 'Aprender el mástil' },
@@ -40,9 +43,9 @@ export const GROUPS = [
 
 export const TOOLS = [
   navigator, blind, triads, quiz, chords,
-  routine, drills, timing, exlib, exercises, audiolab, recorder, metronome, strum, rhythm, vibrato, log,
+  curriculum, routine, repertoire, drills, timing, exlib, exercises, audiolab, recorder, metronome, strum, rhythm, vibrato, log,
   jam, backing, tab, score, licks, randomiser, capo,
-  ear, eq, bendlab, tuner,
+  ear, earplay, eq, bendlab, tuner,
   reference,
 ];
 

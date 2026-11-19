@@ -10,7 +10,7 @@ import {
 } from '../core/drills.js';
 import { dateKey } from '../core/practice.js';
 import {
-  bestSeries, burstPlan, isPlateau, newLadder, recordClean, submitRep, topRecords,
+  FAIL_REASONS, bestSeries, burstPlan, diagnoseFailures, isPlateau, newLadder, recordClean, submitRep, topRecords,
 } from '../core/speed.js';
 import { Transport } from '../audio/transport.js';
 import { beatsToAlphaTex, eventsToBeats, durationForSub } from '../core/alphatex.js';
@@ -112,11 +112,14 @@ function mount(root, ctx) {
     msg.textContent = text;
   }
 
-  function rep(clean) {
+  function rep(clean, reason = null) {
     const l = cfg.ladder;
     const bpmDone = l.bpm;
-    const { ladder, event } = submitRep(l, clean);
+    cfg.askReason = false;
+    const { ladder, event } = submitRep(l, clean, reason);
     cfg.ladder = { ...ladder, drillId: l.drillId };
+    // Con un patrón de fallos repetidos, propone una acción concreta en lugar de seguir a ciegas.
+    cfg.diag = clean ? null : diagnoseFailures(cfg.ladder);
     let recordMsg = null;
     if (clean) {
       const { history: next, isRecord } = recordClean(history, cfg.drill, bpmDone, dateKey());
@@ -155,9 +158,24 @@ function mount(root, ctx) {
         h('p', { class: 'hint', style: 'text-align:center' }, `Objetivo ${l.target} bpm · sube ${l.step} bpm tras ${l.reps} repeticiones limpias seguidas.`),
         h('div', { class: 'row', style: 'justify-content:center' },
           button('✓ Salió limpio', { variant: 'accent', onClick: () => rep(true) }),
-          button('✗ Fallé', { variant: 'outline', onClick: () => rep(false) }),
+          button('✗ Fallé', { variant: 'outline', onClick: () => { cfg.askReason = true; drawLadder(); } }),
         ),
+        cfg.askReason ? h('div', { class: 'stack', style: 'align-items:center' },
+          h('p', { class: 'hint', style: 'margin:0' }, '¿Qué falló? Así te digo qué hacer.'),
+          h('div', { class: 'row', style: 'justify-content:center' },
+            ...FAIL_REASONS.map((r) => button(r.label, { variant: 'outline', onClick: () => rep(false, r.id) })),
+            button('No sé', { variant: 'ghost', onClick: () => rep(false) }),
+          ),
+        ) : null,
         msg,
+        cfg.diag ? h('div', { class: 'feedback bad stack' },
+          h('strong', {}, `Patrón: ${cfg.diag.label} (${cfg.diag.count} fallos)`),
+          h('span', {}, cfg.diag.text),
+          h('div', { class: 'row' },
+            button(`Bajar a ${cfg.diag.bpm} bpm`, { variant: 'accent', onClick: () => { cfg.ladder = { ...cfg.ladder, bpm: cfg.diag.bpm, streak: 0, fails: 0, reasons: {} }; cfg.bpm = cfg.diag.bpm; cfg.diag = null; bpmOut.textContent = `${cfg.bpm} bpm`; drawLadder(); } }),
+            cfg.diag.drill && cfg.diag.drill !== cfg.drill ? button('Trabajar el drill específico', { variant: 'outline', onClick: () => ctx.go('drills', { drill: cfg.diag.drill }) }) : null,
+          ),
+        ) : null,
         h('details', {}, h('summary', {}, 'Ajustar la escalera'),
           h('div', { class: 'stack' },
             slider({ min: 30, max: 240, value: l.start, label: 'Inicio', format: (v) => `${v}`, onInput: (v) => { cfg.ladder.start = v; if (cfg.ladder.bpm < v) { cfg.ladder.bpm = v; cfg.bpm = v; bpmOut.textContent = `${v} bpm`; } } }),

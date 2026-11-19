@@ -11,8 +11,11 @@ import { TIME_SIGNATURES, groovesFor } from '../core/rhythm.js';
 import { coerce } from '../core/state.js';
 import { detectPitch } from '../core/pitch.js';
 import {
-  FOCUS_MODES, JAM_PRESETS, LandingScorer, boardPositions, focusNotes, followWindow, jamPreset, pickLandingTarget, suggestScales,
+  FOCUS_MODES, JAM_PRESETS, LandingScorer, boardPositions, focusNotes, followWindow, jamPreset, suggestScales,
 } from '../core/jam.js';
+import {
+  LANDING_LEVELS, guideLine, landingLevel, landingTarget, suggestLevel,
+} from '../core/guide.js';
 import { BackingPlayer } from '../audio/backing.js';
 import { PLUCK_TONES } from '../audio/pluck.js';
 import { renderFretboard } from '../ui/fretboard.js';
@@ -23,7 +26,7 @@ import { drumStyleOptions, header, instrumentBar, playToggle, rootChoices } from
 
 const STD = TUNINGS.standard.midi;
 const KEY_MODES = [{ value: 'major', label: 'Mayor' }, { value: 'minor', label: 'Menor' }];
-const ROLE_NAMES = { root: 'fundamental', third: '3.ª', fifth: '5.ª', seventh: '7.ª' };
+const ROLE_NAMES = { root: 'fundamental', third: '3.ª', fifth: '5.ª', seventh: '7.ª', tension: 'tensión' };
 
 function mount(root, ctx) {
   const { engine } = ctx;
@@ -50,7 +53,7 @@ function mount(root, ctx) {
     ramp: { on: false, step: 4, max: 140 },
     mute: { on: false, play: 3, silent: 1 },
     loop: { on: false, from: 1, to: 4 },
-    challenge: { on: false, source: 'mic', roles: ['root', 'third', 'fifth'] },
+    challenge: { on: !!p.challenge, source: 'mic', level: LANDING_LEVELS.some((l) => l.id === p.challenge) ? p.challenge : ctx.storage.get('jam-level', 'chord') },
   };
   if (p.chords) {
     try {
@@ -63,6 +66,7 @@ function mount(root, ctx) {
   let windowCenter = 5;
   let lap = 0;
   let nextTarget = null;
+  let lastTarget = null;
   let scorer = new LandingScorer();
   let lastScoreText = '';
   let micStop = null;
@@ -78,6 +82,16 @@ function mount(root, ctx) {
   const status = h('p', { class: 'hint', style: 'text-align:center;min-height:1.3em' });
   const scoreEl = h('div', { class: 'stack' });
   const heardEl = h('p', { class: 'hint', style: 'min-height:1.3em' });
+  const levelHint = h('p', { class: 'hint' }, landingLevel(state.challenge.level).hint);
+  const guideEl = h('p', { class: 'hint', style: 'font-weight:700' });
+
+  /** Resume la línea de voces guía de la progresión (3.ª/7.ª con el menor movimiento). */
+  function drawGuideLine() {
+    if (!state.resolved.length) return;
+    const line = guideLine(state.resolved.map((c) => ({ rootPc: c.rootPc, typeId: c.typeId })), { start: 'seventh' });
+    const text = line.map((l, i) => `${prettyNote(state.resolved[i].symbol)}: ${prettyNote(pcName(l.pc, 'sharp'))} (${l.label})${l.resolves ? ' ↘' : ''}`).join(' → ');
+    guideEl.textContent = `Línea de voces guía: ${text}`;
+  }
 
   /* ─── datos derivados ─── */
   const keyInfo = () => ({ rootPc: resolveProgression(state.root, [{ s: 0, t: 'maj' }])[0].rootPc, mode: state.mode });
@@ -102,6 +116,7 @@ function mount(root, ctx) {
     if (state.mute.on) state.muteCycle = { play: state.mute.play, silent: state.mute.silent };
     else state.muteCycle = null;
     state.loopResolved = activeChords().resolved;
+    drawGuideLine();
     ctx.setParams({
       root: state.root, mode: state.mode, sig: state.signature, groove: state.groove, bpm: state.bpm, focus: state.focus, follow: state.follow ? 1 : 0, prog: state.preset,
       chords: encodeURIComponent(JSON.stringify(state.chords)),
@@ -220,6 +235,7 @@ function mount(root, ctx) {
     const settings = new Proxy(state, { get: (target, key) => (key === 'resolved' ? target.loopResolved : target[key]) });
     if (state.challenge.on) await startListening();
     nextTarget = null;
+    lastTarget = null;
     let lastIdx = -1;
     await player.start(settings, (info) => {
       beatDots.querySelectorAll('.beat-light').forEach((l, i) => l.classList.toggle('is-on', i === info.beat));
@@ -257,13 +273,17 @@ function mount(root, ctx) {
   /* ─── retos de aterrizaje ─── */
   function landingForCurrent(real, loopChords, offset) {
     const c = state.resolved[real];
-    const target = nextTarget && nextTarget.chordIndex === real ? nextTarget : { ...pickLandingTarget({ rootPc: c.rootPc, typeId: c.typeId }, Math.random, state.challenge.roles), chordIndex: real };
-    scorer.startChange(target.pc, ROLE_NAMES[target.role] ?? target.label, performance.now());
+    const level = state.challenge.level;
+    const make = (chord, chordIndex, prev) => {
+      const t = landingTarget({ chord: { rootPc: chord.rootPc, typeId: chord.typeId }, level, prev });
+      return { ...t, chordIndex, label: ROLE_NAMES[t.role] === 'tensión' ? `tensión ${t.label}` : (ROLE_NAMES[t.role] ?? t.label) };
+    };
+    const target = nextTarget && nextTarget.chordIndex === real ? nextTarget : make(c, real, lastTarget);
+    lastTarget = target;
+    scorer.startChange(target.pc, target.label, performance.now());
     updateScoreText();
     const nextReal = (loopChords.findIndex((x) => x === state.resolved[real]) + 1) % loopChords.length + offset;
-    const nc = state.resolved[nextReal];
-    nextTarget = { ...pickLandingTarget({ rootPc: nc.rootPc, typeId: nc.typeId }, Math.random, state.challenge.roles), chordIndex: nextReal };
-    nextTarget.label = ROLE_NAMES[nextTarget.role] ?? nextTarget.label;
+    nextTarget = make(state.resolved[nextReal], nextReal, target);
   }
 
   function updateScoreText() {
@@ -334,10 +354,12 @@ function mount(root, ctx) {
   function finishScore() {
     if (!state.challenge.on || scorer.total < 3) return;
     const list = ctx.storage.get('jam-scores', []);
-    list.unshift({ date: new Date().toISOString().slice(0, 10), key: `${prettyNote(state.root)} ${state.mode === 'minor' ? 'menor' : 'mayor'}`, preset: jamPreset(state.preset).label, hits: scorer.hits, total: scorer.total, bpm: state.bpm });
+    list.unshift({ date: new Date().toISOString().slice(0, 10), key: `${prettyNote(state.root)} ${state.mode === 'minor' ? 'menor' : 'mayor'}`, preset: jamPreset(state.preset).label, hits: scorer.hits, total: scorer.total, bpm: state.bpm, level: state.challenge.level });
     ctx.storage.set('jam-scores', list.slice(0, 30));
     drawScores();
     ctx.toast(`Reto terminado: ${scorer.hits}/${scorer.total} (${scorer.percent} %)`);
+    const hint = suggestLevel(state.challenge.level, { hits: scorer.hits, total: scorer.total });
+    if (hint) setTimeout(() => ctx.toast(hint.text), 2200);
   }
 
   function drawScores() {
@@ -404,7 +426,10 @@ function mount(root, ctx) {
       h('section', { class: 'panel stack' }, h('h2', {}, 'Reto de aterrizaje'),
         toggle('Activar reto (aterriza en una nota del acorde en cada cambio)', state.challenge.on, (v) => { state.challenge.on = v; }),
         h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Cómo te oigo'), segmented([{ value: 'mic', label: 'Micrófono' }, { value: 'midi', label: 'MIDI' }], state.challenge.source, (v) => { state.challenge.source = v; })),
-        h('p', { class: 'hint' }, 'Te avisa un compás antes de qué nota buscar (fundamental, 3.ª o 5.ª del acorde que viene). El audio se analiza solo en tu navegador.'),
+        h('div', { class: 'field' }, h('label', {}, 'Nivel del reto'), select(LANDING_LEVELS.map((l) => ({ value: l.id, label: l.label })), state.challenge.level, (v) => { state.challenge.level = v; ctx.storage.set('jam-level', v); levelHint.textContent = landingLevel(v).hint; drawGuideLine(); })),
+        levelHint,
+        h('p', { class: 'hint' }, 'Te avisa un compás antes de qué nota buscar en el acorde que viene. El audio se analiza solo en tu navegador.'),
+        guideEl,
         scoreEl,
       ),
       h('section', { class: 'panel stack' }, h('h2', {}, 'Mezcla'),

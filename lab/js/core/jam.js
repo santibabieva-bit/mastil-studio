@@ -7,6 +7,8 @@
 
 import { mod, pcName } from './music.js';
 import { CHORD_TYPES } from './chords.js';
+import { guideTones, SECOND_LABEL } from './guide.js';
+import { reharmonizeTwoFiveOne } from './harmony.js';
 
 /** Calidades de escala (ids de FAMILY_DEFS.scale) con su rótulo corto. */
 const SCALE_LABELS = {
@@ -167,6 +169,7 @@ export const FOCUS_MODES = [
   { id: 'chord', label: 'Notas del acorde' },
   { id: 'triad', label: 'Tríada' },
   { id: 'arpeggio', label: 'Arpegio' },
+  { id: 'guide', label: 'Voces guía (3.ª y 7.ª)' },
 ];
 
 /** Intervalos de la escala (para construir sin depender del DOM). */
@@ -214,7 +217,13 @@ export function focusNotes({ chord, suggestion, focus = 'scale' }) {
     if (t) return { role: t.role, label: t.label };
     return { role: null, label: degreeInScale(pc, suggestion) };
   };
-  if (focus === 'chord' || focus === 'arpeggio') {
+  if (focus === 'guide') {
+    // Sólo la 3.ª y la 7.ª destacadas; el resto de la escala queda como contexto.
+    const g = guideTones(chord.rootPc, chord.typeId);
+    if (g.third != null) main.set(g.third, { role: 'third', label: '3.ª' });
+    if (g.seventh != null) main.set(g.seventh, { role: 'seventh', label: SECOND_LABEL[g.second] });
+    if (!main.size) main.set(chord.rootPc, { role: 'root', label: '1' });
+  } else if (focus === 'chord' || focus === 'arpeggio') {
     for (const t of tones) main.set(t.pc, { role: t.role, label: t.label });
   } else if (focus === 'triad') {
     for (const t of tones.filter((x) => x.interval <= 8 || x.role !== 'seventh').slice(0, 3)) main.set(t.pc, { role: t.role, label: t.label });
@@ -343,6 +352,15 @@ export const JAM_PRESETS = [
   { id: 'country', label: 'Country (I – IV – I – V)', mode: 'major', style: 'country', groove: 'country', chords: [[0, 'maj'], [5, 'maj'], [0, 'maj'], [7, '7']] },
   { id: 'reggae', label: 'Reggae (I – IV – V – IV)', mode: 'major', style: 'reggae', groove: 'reggae', chords: [[0, 'maj'], [5, 'maj'], [7, 'maj'], [5, 'maj']] },
   { id: 'bossa', label: 'Bossa (Imaj7 – ii7 – V7 – Imaj7)', mode: 'major', style: 'jazz', groove: 'bossa', chords: [[0, 'maj7'], [2, 'm7'], [7, '7'], [0, 'maj7']] },
+  ...reharmonizeTwoFiveOne(0).slice(1).map((v) => ({
+    id: `reh-${v.id}`,
+    label: `Reharmonizar: ${v.label}`,
+    mode: 'major',
+    style: 'jazz',
+    groove: 'latin',
+    why: v.why,
+    chords: v.chords.map((c) => [c.rootPc, c.typeId]),
+  })),
 ].map((p) => ({ ...p, chords: p.chords.map(([s, t]) => ({ s, t })) }));
 
 export function jamPreset(id) {

@@ -27,6 +27,7 @@ export const EX_FAMILIES = [
   { id: 'double', label: 'Dobles cuerdas', blurb: 'Terceras, sextas y octavas en dos cuerdas a la vez o arpegiadas.' },
   { id: 'arp', label: 'Arpegios', blurb: 'Notas del acorde por posiciones del mástil.' },
   { id: 'legato', label: 'Legato', blurb: 'Hammer-ons y pull-offs: la mano izquierda hace el trabajo.' },
+  { id: 'approach', label: 'Aproximaciones y enclosures', blurb: 'Cómo se llega a una nota del acorde: cromatismos y envolventes (fraseo bebop).' },
 ];
 
 export const DIRECTIONS = [
@@ -309,6 +310,97 @@ function cagedExercise(k) {
   };
 }
 
+
+/* ───────────── aproximaciones y enclosures ───────────── */
+
+/**
+ * Coloca una altura MIDI en el mástil, de preferencia en la cuerda `prefer`
+ * (o la más cercana) y dentro de [0, maxFret].
+ */
+export function placeMidi(tuning, midi, prefer, maxFret = 17) {
+  const options = [];
+  for (let s = 0; s < tuning.length; s += 1) {
+    const f = midi - tuning[s];
+    if (f >= 0 && f <= maxFret) options.push({ s, f, midi });
+  }
+  if (!options.length) return null;
+  return options.sort((a, b) => Math.abs(a.s - prefer) - Math.abs(b.s - prefer) || a.f - b.f)[0];
+}
+
+/** Siguiente altura de la colección por encima (dir = 1) o por debajo (dir = -1). */
+function scaleStep(collection, midi, dir) {
+  let m = midi + dir;
+  while (!collection.noteByPc.has(mod(m, 12))) m += dir;
+  return m;
+}
+
+/** Cada aproximación devuelve las alturas MIDI a tocar antes del objetivo. */
+export const APPROACH_KINDS = {
+  below: {
+    label: 'Cromática desde abajo',
+    desc: 'Un semitono por debajo de cada nota del acorde y luego la nota. Es el recurso más simple y más usado.',
+    tip: 'La nota de paso cae sobre un tiempo débil y la nota del acorde sobre el fuerte: así «tensa y resuelve».',
+    pre: (t) => [t - 1],
+  },
+  above: {
+    label: 'Cromática desde arriba',
+    desc: 'Un semitono por encima de la nota del acorde y luego la nota.',
+    tip: 'Suena algo más «dulce» que desde abajo; úsala cuando la línea ya viene descendiendo.',
+    pre: (t) => [t + 1],
+  },
+  enclosure: {
+    label: 'Enclosure (arriba diatónica, abajo cromática)',
+    desc: 'Rodea la nota objetivo: primero la nota de escala de arriba, luego el semitono de abajo, y por fin la nota.',
+    tip: 'La envolvente clásica del bebop. Dos notas de «aproximación» + una nota del acorde en el tiempo fuerte.',
+    pre: (t, c) => [scaleStep(c, t, 1), t - 1],
+  },
+  enclosureChroma: {
+    label: 'Enclosure cromático (semitono arriba y abajo)',
+    desc: 'Semitono por encima, semitono por debajo y luego la nota del acorde.',
+    tip: 'Tensión máxima en las dos notas de paso. Tócalo seguro, con la nota del acorde claramente en el pulso.',
+    pre: (t) => [t + 1, t - 1],
+  },
+  enclosureLow: {
+    label: 'Enclosure inverso (abajo diatónica, arriba cromática)',
+    desc: 'La nota de escala de abajo, el semitono de arriba y luego la nota objetivo.',
+    tip: 'Versión «espejo» del enclosure: cambia el sentido del giro y tus dedos lo notan.',
+    pre: (t, c) => [scaleStep(c, t, -1), t + 1],
+  },
+};
+
+function approachExercise(kind) {
+  const def = APPROACH_KINDS[kind];
+  return {
+    id: `appr-${kind}`,
+    family: 'approach',
+    chromatic: true,
+    title: def.label,
+    desc: `${def.desc} Se aplica a las notas del acorde (1-3-5-7) de la escala elegida, en la posición escogida.`,
+    tip: def.tip,
+    needsPosition: true,
+    build(o, collection) {
+      const ladder = ladderFor(o, collection);
+      const names = collection.notes;
+      const chordPcs = new Set([0, 2, 4, 6].filter((i) => i < names.length).map((i) => names[i].pc));
+      // Sólo las notas del acorde, una vez cada altura.
+      const seen = new Set();
+      let targets = ladder.filter((n) => chordPcs.has(mod(n.midi, 12)) && !seen.has(n.midi) && seen.add(n.midi));
+      if (o.direction === 'down') targets = [...targets].reverse();
+      else if (o.direction === 'updown') targets = [...targets, ...[...targets].reverse().slice(1)];
+      const maxFret = o.maxFret ?? 17;
+      const notes = [];
+      for (const t of targets) {
+        const pre = def.pre(t.midi, collection).map((m) => placeMidi(o.tuning, m, t.s, maxFret));
+        // Si no cabe alguna nota de aproximación (p. ej. por debajo de la cuerda grave al aire), se omite ese objetivo.
+        if (pre.some((x) => !x)) continue;
+        for (const placed of pre) notes.push({ ...placed, approach: true });
+        notes.push({ ...t });
+      }
+      return { notes };
+    },
+  };
+}
+
 /* ───────────── catálogo ───────────── */
 
 function seqExercise(key, extra = {}) {
@@ -580,6 +672,7 @@ export const EXERCISES = [
       return { notes: notes.map((n) => ({ ...n, midi: o.tuning[s] + n.f })) };
     },
   },
+  ...Object.keys(APPROACH_KINDS).map((k) => approachExercise(k)),
 ];
 
 function permutations3() {

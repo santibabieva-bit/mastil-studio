@@ -14,7 +14,7 @@ const TOOL_NAMES = {
   navigator: 'Navigator', exercises: 'Ejercicios', metronome: 'Metrónomo', drums: 'Caja de ritmos', strum: 'Rasgueo',
   rhythm: 'Ritmo', vibrato: 'Vibrato', backing: 'Backing', quiz: 'Theory Trainer', ear: 'Oído', tab: 'Tabs',
   eq: 'EQ', tuner: 'Afinador', manual: 'Manual', randomiser: 'Randomiser', chords: 'Acordes', capo: 'Capo', jam: 'Jam Studio', triads: 'Triad Lab', routine: 'Rutina', audiolab: 'Audio Lab',
-  timing: 'Timing Lab', drills: 'Drills', bendlab: 'Bends y vibrato', recorder: 'Autograbación', licks: 'Licks', blind: 'Mástil a ciegas',
+  timing: 'Timing Lab', drills: 'Drills', bendlab: 'Bends y vibrato', recorder: 'Autograbación', licks: 'Licks', blind: 'Mástil a ciegas', earplay: 'Toca lo que oyes', repertoire: 'Repertorio', curriculum: 'Ruta', exlib: 'Biblioteca',
 };
 
 function mount(root, ctx) {
@@ -27,6 +27,9 @@ function mount(root, ctx) {
       quiz: ctx.storage.get('quiz-stats', null),
       speed,
       practice: practiceState,
+      earplay: ctx.storage.get('earplay-history', []),
+      jam: ctx.storage.get('jam-scores', []),
+      songs: ctx.storage.get('repertoire', []),
     });
     const size = 300;
     const c = size / 2;

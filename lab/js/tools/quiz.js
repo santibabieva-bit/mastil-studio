@@ -21,7 +21,7 @@ function mount(root, ctx) {
   let stats = ctx.storage.get('quiz-stats', null) ?? emptyStats();
   const cfg = {
     level: ctx.storage.get('quiz-level', 'intermediate'),
-    topics: new Set(ctx.storage.get('quiz-topics', Object.keys(QUIZ_TOPICS))),
+    topics: QUIZ_TOPICS[ctx.params.topic] ? new Set([ctx.params.topic]) : new Set(ctx.storage.get('quiz-topics', Object.keys(QUIZ_TOPICS))),
     mode: 'timed',
     focusWeak: false,
   };

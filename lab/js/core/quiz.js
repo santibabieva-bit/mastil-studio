@@ -20,6 +20,7 @@ import {
 } from './music.js';
 import { diatonicChords } from './chords.js';
 import { dueWeight, reviewCard } from './srs.js';
+import { functionQuestion } from './harmony.js';
 
 export const LEVELS = {
   beginner: { id: 'beginner', label: 'Principiante', maxFret: 5, accidentals: false, strings: [0, 1, 2, 3, 4, 5], keys: ['C', 'G', 'D', 'A', 'E', 'F'] },
@@ -35,6 +36,7 @@ export const QUIZ_TOPICS = {
   roman: { id: 'roman', label: 'Números romanos' },
   mode: { id: 'mode', label: 'Modos' },
   keySig: { id: 'keySig', label: 'Armaduras' },
+  function: { id: 'function', label: 'Armonía funcional' },
 };
 
 const STANDARD = [64, 59, 55, 50, 45, 40];
@@ -263,6 +265,7 @@ const GENERATORS = {
   roman: romanQuestion,
   mode: modeQuestion,
   keySig: keySigQuestion,
+  function: functionQuestion,
 };
 
 let counter = 0;
@@ -334,6 +337,11 @@ export function describeStatKey(key) {
   if (type === 'fretNote' || type === 'findNote') return `${topic} · cuerda ${stringName(Number(detail))}`;
   if (type === 'interval') return `${topic} · ${INTERVAL_NAMES[Number(detail)]?.name ?? detail}`;
   if (type === 'chordInKey' || type === 'roman') return `${topic} · grado ${detail}`;
+  if (type === 'function') {
+    const [, kind, id] = key.split(':');
+    const names = { secondary: 'dominante secundario', borrowed: 'acorde prestado', target: 'resolución', tritone: 'sustituto tritonal' };
+    return `${topic} · ${names[kind] ?? kind}${id ? ` ${id}` : ''}`;
+  }
   if (type === 'mode') return `${topic} · ${MODES.find((m) => m.id === detail)?.label ?? detail}`;
   return `${topic} · ${prettyNote(detail)}`;
 }
