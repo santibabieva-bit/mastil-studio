@@ -125,3 +125,30 @@ export const BPM_NAMES = [
 export function tempoName(bpm) {
   return BPM_NAMES.find(([max]) => bpm < max)?.[1] ?? 'Presto';
 }
+
+/** Instrumentos que se pueden activar o silenciar en vivo en una base (backing/jam). */
+export const BACKING_INSTRUMENTS = [
+  ['drumsOn', 'Batería', '🥁'],
+  ['bassOn', 'Bajo', '🎸'],
+  ['guitarOn', 'Guitarra', '🎵'],
+  ['synthOn', 'Sinte', '🎹'],
+];
+
+/** Fila de botones on/off: cambian el estado y se oyen al instante, sin parar la base. */
+export function instrumentBar(state, { onChange } = {}) {
+  const buttons = BACKING_INSTRUMENTS.map(([flag, label, icon]) => {
+    const btn = h('button', { type: 'button', class: 'inst-chip', 'aria-pressed': String(state[flag] !== false && Boolean(state[flag])) }, `${icon} ${label}`);
+    btn.addEventListener('click', () => {
+      state[flag] = !state[flag];
+      btn.setAttribute('aria-pressed', String(Boolean(state[flag])));
+      onChange?.(flag, state[flag]);
+    });
+    return btn;
+  });
+  return h('div', { class: 'row inst-bar', role: 'group', 'aria-label': 'Instrumentos de la base', style: 'justify-content:center' }, ...buttons);
+}
+
+/** Estilos de batería disponibles para un compás, más «según el groove». */
+export function drumStyleOptions(grooves) {
+  return [{ value: 'auto', label: 'Según el groove' }, ...Object.entries(grooves).map(([value, g]) => ({ value, label: g.label }))];
+}

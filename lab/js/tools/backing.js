@@ -5,10 +5,11 @@ import { PROGRESSION_PRESETS, chordChoices, resolveProgression } from '../core/p
 import { TIME_SIGNATURES, groovesFor } from '../core/rhythm.js';
 import { coerce } from '../core/state.js';
 import { BackingPlayer } from '../audio/backing.js';
+import { PLUCK_TONES } from '../audio/pluck.js';
 import { backingToMidi } from '../core/midi.js';
 import { saveBlob } from '../ui/export.js';
 import { button, clear, h, segmented, select, slider, toggle } from '../ui/dom.js';
-import { header, playToggle, rootChoices } from './common.js';
+import { drumStyleOptions, header, instrumentBar, playToggle, rootChoices } from './common.js';
 
 function mount(root, ctx) {
   const { engine } = ctx;
@@ -21,7 +22,7 @@ function mount(root, ctx) {
     groove: p.groove ?? 'rock',
     bpm: coerce(p.bpm, sess.bpm ?? 90),
     swing: null,
-    guitarTone: 'clean',
+    guitarTone: 'soft', drumStyle: 'auto', drumFill: false,
     drumsOn: true, bassOn: true, guitarOn: true, synthOn: false, clickOn: false, countIn: true,
     chords: null,
     resolved: [],
@@ -122,7 +123,7 @@ function mount(root, ctx) {
     savedEl.append(
       h('div', { class: 'row' }, nameInput, button('Guardar', { variant: 'dark', onClick: () => {
         const name = nameInput.value.trim() || `Base ${list.length + 1}`;
-        const entry = { name, root: state.root, mode: state.mode, signature: state.signature, groove: state.groove, bpm: state.bpm, chords: state.chords, drumsOn: state.drumsOn, bassOn: state.bassOn, guitarOn: state.guitarOn, synthOn: state.synthOn };
+        const entry = { name, root: state.root, mode: state.mode, signature: state.signature, groove: state.groove, bpm: state.bpm, chords: state.chords, drumsOn: state.drumsOn, bassOn: state.bassOn, guitarOn: state.guitarOn, synthOn: state.synthOn, drumStyle: state.drumStyle, drumFill: state.drumFill, guitarTone: state.guitarTone };
         ctx.storage.set('backing-saved', [...list.filter((x) => x.name !== name), entry]);
         drawSaved();
         ctx.toast('Base guardada');
@@ -160,13 +161,15 @@ function mount(root, ctx) {
         slider({ min: 50, max: 72, value: 50, label: 'Swing', format: (v) => (v === 50 ? 'según groove' : `${v}%`), onInput: (v) => { state.swing = v === 50 ? null : v / 100; } }),
       ),
       h('section', { class: 'panel stack' }, h('h2', {}, 'Mezcla'),
-        ...[['drums', 'Batería', 'drumsOn'], ['bass', 'Bajo', 'bassOn'], ['guitar', 'Guitarra', 'guitarOn'], ['synth', 'Sintetizador', 'synthOn']].map(([bus, label, flag]) => h('div', { class: 'stack' },
-          toggle(label, state[flag], (v) => { state[flag] = v; }),
+        ...[['drums', 'Batería'], ['bass', 'Bajo'], ['guitar', 'Guitarra'], ['synth', 'Sintetizador']].map(([bus, label]) => h('div', { class: 'stack' },
+          h('span', { class: 'slider-label' }, `Volumen · ${label}`),
           slider({ min: 0, max: 100, value: Math.round(state.vol[bus] * 100), format: (v) => `${v}%`, onInput: (v) => { state.vol[bus] = v / 100; engine.setBusVolume(bus, v / 100); } }),
         )),
+        h('div', { class: 'field' }, h('label', {}, 'Estilo de batería'), select(drumStyleOptions(grooves), state.drumStyle, (v) => { state.drumStyle = v; })),
+        toggle('Relleno de batería al final de cada vuelta', state.drumFill, (v) => { state.drumFill = v; }),
         toggle('Click en los pulsos', state.clickOn, (v) => { state.clickOn = v; }),
         toggle('Cuenta previa de un compás', state.countIn, (v) => { state.countIn = v; }),
-        h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Tono de guitarra'), segmented([{ value: 'clean', label: 'Limpio' }, { value: 'warm', label: 'Cálido' }, { value: 'bright', label: 'Brillante' }], state.guitarTone, (v) => { state.guitarTone = v; })),
+        h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Tono de guitarra'), segmented(PLUCK_TONES, state.guitarTone, (v) => { state.guitarTone = v; })),
       ),
     );
   }
@@ -190,6 +193,7 @@ function mount(root, ctx) {
           h('div', { class: 'row', style: 'justify-content:center' }, play.el),
           beatDots,
           status,
+          instrumentBar(state),
           barsEl,
         ),
         h('section', { class: 'panel stack' }, h('h2', {}, 'Improvisa encima'),

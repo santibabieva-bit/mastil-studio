@@ -312,6 +312,18 @@ export class AudioEngine {
       hp.connect(out);
       src.start(time);
       src.stop(time + len + 0.02);
+    } else if (name === 'crash') {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noise;
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 5000;
+      out.gain.setValueAtTime(0.5 * vel, time);
+      out.gain.exponentialRampToValueAtTime(0.001, time + 1.4);
+      src.connect(hp);
+      hp.connect(out);
+      src.start(time);
+      src.stop(time + 1.45);
     } else if (name === 'tom') {
       const osc = ctx.createOscillator();
       osc.type = 'sine';

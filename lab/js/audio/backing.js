@@ -105,12 +105,24 @@ export class BackingPlayer {
     }
 
     if (s.drumsOn !== false) {
-      for (const track of DRUM_TRACKS) {
-        if (groove.tracks[track.id]?.[barStep]) {
-          const accent = barStep % sig.stepsPerBeat === 0 ? 1 : 0.78;
-          e.drum(track.id, t, accent * (s.drumVel ?? 1));
+      // La batería puede seguir otro estilo que el bajo y la guitarra.
+      const drumGroove = s.drumStyle && s.drumStyle !== 'auto' && grooves[s.drumStyle]?.steps === stepsPerBar ? grooves[s.drumStyle] : groove;
+      const lastBeatStart = stepsPerBar - sig.stepsPerBeat;
+      const fillNow = s.drumFill && musicalBar % chords.length === chords.length - 1 && barStep >= lastBeatStart;
+      if (fillNow) {
+        // Relleno en el último tiempo del ciclo: caja y toms.
+        const j = barStep - lastBeatStart;
+        e.drum(j >= sig.stepsPerBeat / 2 ? 'tom' : 'snare', t, 0.55 + 0.3 * (j / sig.stepsPerBeat));
+        if (barStep === lastBeatStart) e.drum('kick', t, 0.8);
+      } else {
+        for (const track of DRUM_TRACKS) {
+          if (drumGroove.tracks[track.id]?.[barStep]) {
+            const accent = barStep % sig.stepsPerBeat === 0 ? 1 : 0.78;
+            e.drum(track.id, t, accent * (s.drumVel ?? 1));
+          }
         }
       }
+      if (s.drumFill && barStep === 0 && musicalBar > 0 && chordIndex === 0) e.drum('crash', t, 0.8);
     }
 
     if (s.bassOn !== false) {

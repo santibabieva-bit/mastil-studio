@@ -401,3 +401,7 @@ details.syntax pre { font-family: var(--font-mono); font-size: 0.82rem; white-sp
 .site-copyright { text-align: center; padding: 18px 16px 26px; color: var(--ink-soft); }
 .site-copyright a { color: inherit; }
 @media print { .site-copyright { display: none; } }
+
+.inst-chip { border: 2px solid var(--line); background: #fffdf8; color: var(--ink-soft); border-radius: 999px; padding: 7px 14px; font: inherit; font-weight: 700; cursor: pointer; }
+.inst-chip[aria-pressed="true"] { border-color: var(--orange); background: var(--orange-pale); color: var(--orange-dark); }
+.inst-chip:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }

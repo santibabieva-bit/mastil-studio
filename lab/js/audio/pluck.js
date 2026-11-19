@@ -5,11 +5,23 @@
 
 import { midiToFreq } from '../core/music.js';
 
+/**
+ * lp: brillo de la excitación (0-1) · decay: duración · fc: corte (Hz) de un
+ * filtro paso bajo final de dos polos que quita la «chicharra» aguda (0 = sin filtro).
+ */
 const PROFILES = {
-  clean: { lp: 0.55, decay: 0.9985 },
-  warm: { lp: 0.3, decay: 0.9988 },
-  bright: { lp: 0.85, decay: 0.998 },
+  soft: { lp: 0.2, decay: 0.9986, fc: 1500 },
+  clean: { lp: 0.4, decay: 0.9985, fc: 3200 },
+  warm: { lp: 0.25, decay: 0.9988, fc: 2000 },
+  bright: { lp: 0.85, decay: 0.998, fc: 0 },
 };
+
+export const PLUCK_TONES = [
+  { value: 'soft', label: 'Suave' },
+  { value: 'clean', label: 'Limpio' },
+  { value: 'warm', label: 'Cálido' },
+  { value: 'bright', label: 'Brillante' },
+];
 
 /** @returns {Float32Array} muestras normalizadas a ±0,9 */
 export function synthPluck(sampleRate, midi, tone = 'clean') {
@@ -40,6 +52,16 @@ export function synthPluck(sampleRate, midi, tone = 'clean') {
     const u = (1 - frac) * out[n - base] + frac * out[n - base - 1];
     out[n] = decay * 0.5 * (u + prevU);
     prevU = u;
+  }
+  if (profile.fc > 0) {
+    const k = 1 - Math.exp((-2 * Math.PI * profile.fc) / sampleRate);
+    for (let pass = 0; pass < 2; pass += 1) {
+      let y = 0;
+      for (let n = 0; n < length; n += 1) {
+        y += k * (out[n] - y);
+        out[n] = y;
+      }
+    }
   }
   let peak = 0;
   for (let n = 0; n < length; n += 1) {

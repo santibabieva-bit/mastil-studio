@@ -150,3 +150,42 @@ test('BackingPlayer.tick recorre todos los grooves y compases sin errores', asyn
   }
   assert.ok(calls.some(([k]) => k === 'drum') && calls.some(([k]) => k === 'bass'));
 });
+
+test('batería: estilo propio, relleno al final de la vuelta y crash; instrumentos apagables', async () => {
+  const { BackingPlayer } = await import('../lab/js/audio/backing.js');
+  const { resolveProgression } = await import('../lab/js/core/progressions.js');
+  const resolved = resolveProgression('A', [{ s: 0, t: 'm' }, { s: 5, t: '' }]);
+  const run = (extra, bars = 6) => {
+    const calls = [];
+    const engine = new Proxy({ at: (t, fn) => fn() }, { get: (target, key) => target[key] ?? ((...args) => calls.push([key, ...args])) });
+    const player = new BackingPlayer(engine);
+    player.settings = { signature: '4/4', groove: 'rock', bpm: 100, resolved, countIn: false, drumsOn: true, bassOn: true, guitarOn: true, synthOn: false, ...extra };
+    for (let step = 0; step < 16 * bars; step += 1) player.tick(step, step * 0.1);
+    return calls;
+  };
+  const base = run({});
+  assert.ok(!base.some((c) => c[0] === 'drum' && c[1] === 'crash'));
+  const fill = run({ drumFill: true });
+  assert.ok(fill.some((c) => c[0] === 'drum' && c[1] === 'crash'), 'crash al empezar la vuelta');
+  assert.ok(fill.filter((c) => c[0] === 'drum' && c[1] === 'tom').length > base.filter((c) => c[0] === 'drum' && c[1] === 'tom').length, 'relleno con toms');
+  const funk = run({ drumStyle: 'funk' }).filter((c) => c[0] === 'drum').length;
+  assert.notEqual(funk, base.filter((c) => c[0] === 'drum').length, 'otro estilo de batería, otro patrón');
+  assert.ok(run({ drumsOn: false }).every((c) => c[0] !== 'drum'));
+  assert.ok(run({ bassOn: false }).every((c) => c[0] !== 'bass'));
+  assert.ok(run({ guitarOn: false }).every((c) => c[0] !== 'strum' && c[0] !== 'pluck'));
+});
+
+test('tono de guitarra: «suave» tiene menos agudos que «limpio» y «brillante», sin cambiar la afinación', async () => {
+  const { synthPluck, PLUCK_TONES } = await import('../lab/js/audio/pluck.js');
+  assert.deepEqual(PLUCK_TONES.map((t) => t.value), ['soft', 'clean', 'warm', 'bright']);
+  // energía de la señal diferenciada = brillo (más agudos → más cambio muestra a muestra)
+  const brightness = (tone) => {
+    const x = synthPluck(44100, 64, tone).slice(0, 8000);
+    let diff = 0;
+    let total = 0;
+    for (let i = 1; i < x.length; i += 1) { diff += (x[i] - x[i - 1]) ** 2; total += x[i] ** 2; }
+    return diff / total;
+  };
+  assert.ok(brightness('soft') < brightness('clean'));
+  assert.ok(brightness('clean') < brightness('bright'));
+});
