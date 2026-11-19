@@ -10,7 +10,7 @@ import {
 } from '../core/drills.js';
 import { dateKey } from '../core/practice.js';
 import {
-  FAIL_REASONS, bestSeries, burstPlan, diagnoseFailures, isPlateau, newLadder, recordClean, submitRep, topRecords,
+  FAIL_REASONS, barCount, bestSeries, burstPlan, diagnoseFailures, fragmentPlan, isPlateau, newLadder, recordClean, submitRep, topRecords,
 } from '../core/speed.js';
 import { Transport } from '../audio/transport.js';
 import { beatsToAlphaTex, eventsToBeats, durationForSub } from '../core/alphatex.js';
@@ -33,6 +33,9 @@ function mount(root, ctx) {
     mode: 'ladder',
     ladder: null,
     plan: null,
+    fragment: null,
+    held: null,
+    lastFail: false,
     planIdx: 0,
     planLoops: 0,
     bpm: 80,
@@ -66,6 +69,7 @@ function mount(root, ctx) {
       cfg.ladder = { ...newLadder({ start: lo, target: hi, step: 4, reps: 3 }), drillId: cfg.drill };
       cfg.bpm = cfg.ladder.bpm;
     }
+    cfg.fragment = null;
     drawTab();
     drawInfo();
     drawLadder();
@@ -96,7 +100,7 @@ function mount(root, ctx) {
       const perms = permutations24();
       controls.push(h('div', { class: 'field' }, h('label', {}, 'Permutación de dedos'), select(perms.map((p, i) => ({ value: i, label: `${i + 1}. ${p.join('-')}` })), cfg.variant, (v) => { cfg.variant = Number(v); ctx.storage.set('drill-variant', cfg.variant); rebuild(); })));
     }
-    controls.push(h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Notas por pulso'), segmented([{ value: 1, label: '1' }, { value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }], cfg.sub, (v) => { cfg.sub = Number(v); ctx.storage.set('drill-sub', cfg.sub); drawTab(); })));
+    controls.push(h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Notas por pulso'), segmented([{ value: 1, label: '1' }, { value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }], cfg.sub, (v) => { cfg.sub = Number(v); ctx.storage.set('drill-sub', cfg.sub); cfg.fragment = null; drawTab(); drawLadder(); })));
     info.append(
       h('h2', { style: 'margin:0' }, d.title),
       h('p', {}, d.desc),
@@ -116,6 +120,8 @@ function mount(root, ctx) {
     const l = cfg.ladder;
     const bpmDone = l.bpm;
     cfg.askReason = false;
+    cfg.held = null;
+    cfg.lastFail = !clean;
     const { ladder, event } = submitRep(l, clean, reason);
     cfg.ladder = { ...ladder, drillId: l.drillId };
     // Con un patrón de fallos repetidos, propone una acción concreta en lugar de seguir a ciegas.
@@ -136,9 +142,35 @@ function mount(root, ctx) {
     };
     if (recordMsg) showMsg(`${recordMsg} ${event === 'up' ? texts.up : ''}`.trim(), 'ok');
     else showMsg(texts[event], event === 'drop' || event === 'retry' ? 'bad' : 'ok');
+    // Guardián de calidad: si el Timing Lab mostró que el pulso se degrada a este tempo, no subas.
+    const hold = ctx.storage.get('quality-hold', null);
+    if (clean && event === 'up' && hold && hold.date === dateKey() && ladder.bpm >= hold.bpm) {
+      cfg.held = { text: hold.text, to: ladder.bpm };
+      cfg.ladder = { ...cfg.ladder, bpm: bpmDone, streak: 0 };
+      showMsg(`Te quedas en ${bpmDone} bpm.`, 'bad');
+    }
     cfg.bpm = cfg.ladder.bpm;
     drawLadder();
     drawHistory();
+  }
+
+  /** Compases del ejercicio actual (4 pulsos cada uno). */
+  const barsNow = () => barCount(built.events.length, cfg.sub);
+
+  function isolate(failBar) {
+    const plan = fragmentPlan({ bars: barsNow(), failBar });
+    transport.stop();
+    cfg.fragment = plan;
+    cfg.bpm = Math.max(30, Math.round(cfg.ladder.bpm * 0.8));
+    cfg.lastFail = false;
+    drawLadder();
+  }
+
+  function leaveFragment() {
+    transport.stop();
+    cfg.fragment = null;
+    cfg.bpm = cfg.ladder.bpm;
+    drawLadder();
   }
 
   function drawLadder() {
@@ -168,6 +200,19 @@ function mount(root, ctx) {
           ),
         ) : null,
         msg,
+        cfg.held ? h('div', { class: 'feedback bad stack' },
+          h('span', {}, cfg.held.text),
+          button(`Subir igualmente a ${cfg.held.to} bpm`, { variant: 'outline', onClick: () => { ctx.storage.set('quality-hold', null); cfg.ladder = { ...cfg.ladder, bpm: cfg.held.to }; cfg.bpm = cfg.held.to; cfg.held = null; showMsg(''); drawLadder(); } }),
+        ) : null,
+        cfg.lastFail && !cfg.fragment && barsNow() >= 2 && barsNow() <= 12 ? h('div', { class: 'stack' },
+          h('p', { class: 'hint', style: 'margin:0' }, '¿En qué compás fallaste? Lo aíslo y lo repites en bucle.'),
+          h('div', { class: 'row' }, ...Array.from({ length: barsNow() }, (_, i) => button(`Compás ${i + 1}`, { variant: 'ghost', onClick: () => isolate(i + 1) }))),
+        ) : null,
+        cfg.fragment ? h('div', { class: 'feedback ok stack' },
+          h('strong', {}, `Pasaje aislado: compases ${cfg.fragment.from}–${cfg.fragment.to} (tempo ${cfg.bpm} bpm)`),
+          h('ol', { style: 'margin:0;padding-left:20px' }, ...cfg.fragment.steps.map((t) => h('li', {}, t))),
+          button('Volver al ejercicio completo', { variant: 'outline', onClick: leaveFragment }),
+        ) : null,
         cfg.diag ? h('div', { class: 'feedback bad stack' },
           h('strong', {}, `Patrón: ${cfg.diag.label} (${cfg.diag.count} fallos)`),
           h('span', {}, cfg.diag.text),
@@ -228,7 +273,9 @@ function mount(root, ctx) {
   /* ─── Reproducción ─── */
   async function start() {
     await engine.ensure();
-    const events = built.events;
+    const barLen = cfg.sub * 4;
+    const offset = cfg.fragment ? (cfg.fragment.from - 1) * barLen : 0;
+    const events = cfg.fragment ? built.events.slice(offset, cfg.fragment.to * barLen) : built.events;
     const perBeat = cfg.sub;
     loops = 0;
     cfg.planIdx = 0;
@@ -266,7 +313,7 @@ function mount(root, ctx) {
           mute: ev.art === 'M',
         });
         if (i % perBeat === 0) engine.click(time, { accent: (i / perBeat) % 4 === 0, sound: 'click', vol: 0.5 });
-        engine.at(time, () => score.seekBeat(i));
+        engine.at(time, () => score.seekBeat(i + offset));
         return true;
       },
     });

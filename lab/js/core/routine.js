@@ -51,7 +51,11 @@ export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {},
   const cooldown = full >= 30 ? 3 : 0;
   const total = full - cooldown;
   const objective = objectives[0] ?? null;
-  const base = objective ? [{ id: 'objective', weight: 0.28, tools: [objective.tool] }, ...BASE] : BASE;
+  // En sesiones largas entra también el segundo objetivo (otra herramienta, para intercalar).
+  const objectiveB = full >= 45 && objectives[1] && objectives[1].tool !== objective?.tool ? objectives[1] : null;
+  const base = objective
+    ? [{ id: 'objective', weight: 0.28, tools: [objective.tool] }, ...(objectiveB ? [{ id: 'objective-b', weight: 0.14, tools: [objectiveB.tool] }] : []), ...BASE]
+    : BASE;
   // Hay datos del mapa y aún queda mástil por dominar: bloque de zonas débiles.
   const withNeck = neck && neck.pct < 0.9 ? [...base, { id: 'neckmap', weight: 0.12, tools: ['neckmap'] }] : base;
   const weights = withNeck.map((b) => {
@@ -91,6 +95,8 @@ export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {},
     switch (b.id) {
       case 'objective':
         return { id: b.id, minutes: b.min, tool: objective.tool, title: `Objetivo: ${objective.label}`, params: objective.params ?? {}, why: objective.how ?? 'Siguiente puerta de tu currículo.', objective: objective.id };
+      case 'objective-b':
+        return { id: b.id, minutes: b.min, tool: objectiveB.tool, title: `Objetivo: ${objectiveB.label}`, params: objectiveB.params ?? {}, why: objectiveB.how ?? 'Segundo objetivo de tu currículo.', objective: objectiveB.id };
       case 'neckmap':
         return { id: b.id, minutes: b.min, tool: 'neckmap', title: 'Zonas débiles del mástil', params: {}, why: neck.weak ? `Tienes ${neck.weak} puntos flojos${neck.worst ? ` (el peor: ${neck.worst})` : ''}. Diez notas que insisten justo ahí.` : `Llevas el ${Math.round(neck.pct * 100)} % del mástil dominado: sigue llenándolo.` };
       case 'warmup':

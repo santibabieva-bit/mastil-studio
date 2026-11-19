@@ -112,3 +112,33 @@ test('currículo: «mástil dominado» se mide con el mapa', () => {
   assert.equal(find(st, 'l4-map').done, true);
   assert.match(find(st, 'l2-map').text, /78\/78/);
 });
+
+import { barCount, guardFromTiming } from '../lab/js/core/speed.js';
+
+test('guardFromTiming compara con la última sesión a un tempo menor y mismo subdivisión', () => {
+  const list = [
+    { bpm: 80, sub: 2, sd: 12 },
+    { bpm: 100, sub: 4, sd: 40 }, // otra subdivisión: no cuenta
+  ];
+  assert.equal(guardFromTiming(list, { bpm: 100, sub: 2, sd: 30 }).hold, true);
+  assert.equal(guardFromTiming(list, { bpm: 100, sub: 2, sd: 13 }).hold, false);
+  assert.equal(guardFromTiming(list, { bpm: 60, sub: 2, sd: 99 }).hold, false, 'sin sesión a menos tempo');
+  assert.equal(guardFromTiming([{ bpm: 40, sub: 2, sd: 5 }], { bpm: 100, sub: 2, sd: 50 }).hold, false, 'referencia demasiado lejana');
+});
+
+test('barCount: compases de 4 pulsos', () => {
+  assert.equal(barCount(16, 2), 2);
+  assert.equal(barCount(8, 2), 1);
+  assert.equal(barCount(17, 4), 2);
+});
+
+test('rutina larga con dos objetivos: ambos aparecen y suma exacta', () => {
+  const objs = [{ id: 'a', label: 'A', tool: 'jam', params: {}, how: 'x' }, { id: 'b', label: 'B', tool: 'earplay', params: {}, how: 'y' }];
+  for (const minutes of [45, 60, 90]) {
+    const r = buildRoutine({ minutes, objectives: objs, rng: () => 0.4 });
+    assert.equal(r.blocks.reduce((a, b) => a + b.minutes, 0), r.total);
+    assert.ok(r.blocks.some((b) => b.objective === 'b' && b.tool === 'earplay'), `${minutes}`);
+  }
+  const short = buildRoutine({ minutes: 30, objectives: objs, rng: () => 0.4 });
+  assert.ok(!short.blocks.some((b) => b.objective === 'b'));
+});

@@ -166,3 +166,19 @@ export function fragmentPlan({ bars, failBar }) {
   const to = Math.min(bars, bar + 1);
   return { from, to, bar, steps: [`Bucle de los compases ${from}–${to} al 80 % del tempo`, `Sube de 4 en 4 bpm con 3 repeticiones limpias`, `Une el pasaje completo (compases 1–${bars})`] };
 }
+
+/**
+ * Calidad al subir de tempo, desde el historial del Timing Lab: compara la
+ * dispersión (sd, ms) de esta sesión con la última sesión anterior a un
+ * tempo menor y con el mismo subdivisión.
+ * @returns {{hold:boolean, text?:string}}
+ */
+export function guardFromTiming(list, { bpm, sub, sd }) {
+  const prev = [...(list ?? [])].reverse().find((x) => x.sub === sub && x.bpm < bpm && x.bpm >= bpm * 0.6);
+  return qualityGuard({ prevJitterMs: prev?.sd ?? null, jitterMs: sd });
+}
+
+/** Número de compases (4 pulsos) de un ejercicio con `steps` notas y `perBeat` notas por pulso. */
+export function barCount(steps, perBeat) {
+  return Math.max(1, Math.ceil(steps / (perBeat * 4)));
+}

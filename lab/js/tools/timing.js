@@ -8,6 +8,7 @@ import {
   calibrationLatency, detectOnsets, gridDeviations, timingStats, timingVerdict,
 } from '../core/timing.js';
 import { dateKey } from '../core/practice.js';
+import { guardFromTiming } from '../core/speed.js';
 import { createRecorder, openMic } from '../audio/mic.js';
 import { button, clear, h, segmented, slider } from '../ui/dom.js';
 import { header } from './common.js';
@@ -120,6 +121,16 @@ function mount(root, ctx) {
     const list = ctx.storage.get('timing-history', []);
     list.push({ date: dateKey(), bpm: cfg.bpm, sub: perBeat, sd: Math.round(stats.sd * 10) / 10, mean: Math.round(stats.mean * 10) / 10, score: stats.score, n: stats.n });
     ctx.storage.set('timing-history', list.slice(-60));
+    // Si al subir de tempo la dispersión empeora, la app lo recuerda en los drills.
+    const guard = guardFromTiming(list.slice(0, -1).slice(-12), { bpm: cfg.bpm, sub: perBeat, sd: stats.sd });
+    const hold = ctx.storage.get('quality-hold', null);
+    if (guard.hold) {
+      ctx.storage.set('quality-hold', { bpm: cfg.bpm, date: dateKey(), text: guard.text });
+      results.append(h('p', { class: 'feedback bad' }, `${guard.text} Los drills no te subirán de ${cfg.bpm} bpm hoy (puedes ignorarlo allí).`));
+    } else if (hold && cfg.bpm >= hold.bpm) {
+      ctx.storage.set('quality-hold', null);
+      results.append(h('p', { class: 'feedback ok' }, `Tu pulso aguanta a ${cfg.bpm} bpm: quito el aviso de calidad.`));
+    }
     drawHistory();
   }
 
