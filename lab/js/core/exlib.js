@@ -172,7 +172,10 @@ const CAGED_SHAPES = {
 };
 export const CAGED_ORDER = ['C', 'A', 'G', 'E', 'D'];
 
-/** Ventanas de las cinco formas para esa tónica, ordenadas por traste. */
+/**
+ * Ventanas de las formas CAGED para esa tónica, ordenadas por traste. Cada
+ * forma aparece también una octava más arriba (octave = 1) si cabe en el mástil.
+ */
 export function cagedShapes({ tuning, collection, maxFret = 17 }) {
   const out = [];
   for (const id of CAGED_ORDER) {
@@ -181,11 +184,36 @@ export function cagedShapes({ tuning, collection, maxFret = 17 }) {
     let r = 0;
     while (mod(tuning[s] + r, 12) !== collection.root.pc) r += 1;
     if (r - def.below < -1) r += 12;
-    const from = Math.max(0, r - def.below);
-    const to = r + def.above;
-    if (from <= maxFret) out.push({ id, from, to: Math.min(to, maxFret), rootFret: r, rootString: s });
+    for (let octave = 0; octave < 2; octave += 1) {
+      const root = r + 12 * octave;
+      const from = Math.max(0, root - def.below);
+      const to = root + def.above;
+      if (from <= maxFret) out.push({ id, from, to: Math.min(to, maxFret), rootFret: root, rootString: s, octave });
+    }
   }
   return out.sort((a, b) => a.from - b.from || a.to - b.to);
+}
+
+/** Colores de cada zona CAGED (mástil del ejercicio). */
+export const CAGED_COLORS = { C: '#3b73c9', A: '#2f8a57', G: '#d9761c', E: '#8a4fb0', D: '#b5456e' };
+
+/**
+ * Todas las notas de la escala sobre el mástil, cada una con las zonas CAGED a
+ * las que pertenece (las zonas se solapan unos trastes: una nota puede tener 2 o 3).
+ */
+export function cagedBoard({ tuning, collection, maxFret = 17 }) {
+  const shapes = cagedShapes({ tuning, collection, maxFret });
+  const notes = [];
+  for (let s = 0; s < tuning.length; s += 1) {
+    for (let f = 0; f <= maxFret; f += 1) {
+      const midi = tuning[s] + f;
+      const note = collection.noteByPc.get(mod(midi, 12));
+      if (!note) continue;
+      const zones = [...new Set(CAGED_ORDER.filter((id) => shapes.some((z) => z.id === id && f >= z.from && f <= z.to)))];
+      notes.push({ s, f, midi, name: note.name, zones, isRoot: note.pc === collection.root.pc });
+    }
+  }
+  return { notes, shapes };
 }
 
 /** Todos los pares de cuerdas (más grave, más aguda), de cualquier separación. */
@@ -251,27 +279,32 @@ function cagedExercise(k) {
       const picked = Array.isArray(o.cagedPair) ? pairs.filter((p) => p[0] === o.cagedPair[0] && p[1] === o.cagedPair[1]) : [];
       const wantedPairs = picked.length ? picked : pairs;
       const rows = [];
-      const seen = new Set();
-      for (const shape of chosen) {
-        for (const pair of wantedPairs) {
-          const part = doubleStopsIn({ tuning, collection, k, pair, from: shape.from, to: shape.to })
-            .sort((a, b) => a.low.midi - b.low.midi);
-          for (const r of part) {
-            const key = `${r.low.s}-${r.low.f}-${r.high.s}-${r.high.f}`;
+      // Un barrido ascendente por cada par de cuerdas, recorriendo las zonas elegidas.
+      for (const pair of wantedPairs) {
+        const seen = new Set();
+        const part = [];
+        for (const shape of chosen) {
+          for (const r of doubleStopsIn({ tuning, collection, k, pair, from: shape.from, to: shape.to })) {
+            const key = `${r.low.f}-${r.high.f}`;
             if (seen.has(key)) continue;
             seen.add(key);
-            rows.push(r);
+            part.push(r);
           }
         }
+        part.sort((a, b) => a.low.midi - b.low.midi || a.high.midi - b.high.midi);
+        rows.push(...part);
       }
       if (!rows.length) return { notes: [], warnings: ['Esa forma no cabe en el mástil con esta afinación o par de cuerdas.'] };
       const list = o.direction === 'down' ? [...rows].reverse() : o.direction === 'updown' ? [...rows, ...[...rows].reverse().slice(1)] : rows;
-      const beats = list.flatMap((r) => {
+      const beatRow = [];
+      const beats = list.flatMap((r, i) => {
         const lo = { s: r.low.s, f: r.low.f, midi: r.low.midi, tech: [] };
         const hi = { s: r.high.s, f: r.high.f, midi: r.high.midi, tech: [] };
-        return o.harmonic === false ? [{ notes: [lo] }, { notes: [hi] }] : [{ notes: [lo, hi] }];
+        if (o.harmonic === false) { beatRow.push(i, i); return [{ notes: [lo] }, { notes: [hi] }]; }
+        beatRow.push(i);
+        return [{ notes: [lo, hi] }];
       });
-      return { beats: assignBeatFingers(beats), notes: list.flatMap((r) => [r.low, r.high]) };
+      return { beats: assignBeatFingers(beats), notes: list.flatMap((r) => [r.low, r.high]), rows: list, beatRow };
     },
   };
 }
@@ -602,6 +635,8 @@ export function buildExercise(id, o) {
     notes: uniquePositions(notes),
     warnings: result.warnings ?? (beats.length ? [] : ['La posición no cabe en el mástil con esta afinación.']),
     noteCount: beats.reduce((n, b) => n + b.notes.length, 0),
+    rows: result.rows ?? null,
+    beatRow: result.beatRow ?? null,
   };
 }
 

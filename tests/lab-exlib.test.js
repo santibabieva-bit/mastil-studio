@@ -302,18 +302,39 @@ test('CAGED por terceras y sextas: cada forma da dobles cuerdas diatónicas dent
   const tuning = [64, 59, 55, 50, 45, 40];
   const collection = createNoteCollection('C', 'scale', 'major');
   const shapes = cagedShapes({ tuning, collection });
-  assert.deepEqual(shapes.map((s) => s.id), ['C', 'A', 'G', 'E', 'D']);
+  assert.deepEqual([...new Set(shapes.map((s) => s.id))].sort(), ['A', 'C', 'D', 'E', 'G']);
+  assert.deepEqual(shapes.filter((s) => s.octave === 0).map((s) => s.id), ['C', 'A', 'G', 'E', 'D']);
   for (const [id, lo, hi] of [['caged-3', 3, 4], ['caged-6', 8, 9]]) {
-    for (const shape of shapes) {
+    for (const shape of shapes.filter((s) => s.octave === 0)) {
+      const windows = shapes.filter((s) => s.id === shape.id);
       const r = buildExercise(id, { tuning, root: 'C', quality: 'major', shape: shape.id });
       assert.ok(r.beats.length > 0, `${id} ${shape.id}`);
       for (const b of r.beats) {
         const [a, c] = b.notes.map((n) => n.midi).sort((x, y) => x - y);
         assert.ok((c - a) % 12 >= lo % 12 && (c - a) % 12 <= hi % 12, `${id} ${c - a}`);
-        assert.ok(b.notes.every((n) => n.f >= Math.max(0, shape.from - 1) && n.f <= shape.to + 2));
+        assert.ok(b.notes.every((n) => windows.some((w) => n.f >= Math.max(0, w.from - 1) && n.f <= w.to + 2)));
         assert.ok(Math.abs(b.notes[0].f - b.notes[b.notes.length - 1].f) <= 5);
         assert.ok(b.notes.every((n) => collection.noteByPc.has(n.midi % 12)));
       }
     }
   }
+});
+
+test('CAGED: un par de cuerdas se recorre de grave a agudo y cada pulso apunta a su par', async () => {
+  const { buildExercise, cagedBoard } = await import('../lab/js/core/exlib.js');
+  const { createNoteCollection } = await import('../lab/js/core/music.js');
+  const tuning = [64, 59, 55, 50, 45, 40];
+  for (const harmonic of [true, false]) {
+    const r = buildExercise('caged-3', { tuning, root: 'C', quality: 'major', shape: 'all', cagedPair: [2, 1], harmonic });
+    assert.ok(r.rows.length >= 8, 'barre varias zonas del mástil');
+    assert.equal(r.beatRow.length, r.beats.length);
+    assert.ok(r.rows.every((row) => row.low.s === 2 && row.high.s === 1));
+    for (let i = 1; i < r.rows.length; i += 1) assert.ok(r.rows[i].low.midi >= r.rows[i - 1].low.midi, 'ascendente');
+    assert.equal(r.beats.length, harmonic ? r.rows.length : r.rows.length * 2);
+  }
+  const collection = createNoteCollection('C', 'scale', 'major');
+  const { notes } = cagedBoard({ tuning, collection });
+  assert.ok(notes.every((n) => collection.noteByPc.has(n.midi % 12)), 'sólo notas de la escala');
+  assert.ok(notes.every((n) => n.zones.length >= 1), 'toda nota pertenece a alguna zona');
+  assert.ok(notes.some((n) => n.zones.length >= 2), 'las zonas se solapan');
 });

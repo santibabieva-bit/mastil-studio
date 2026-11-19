@@ -34,6 +34,17 @@ function wirePos(n) {
 
 export const ROLE_COLORS = { root: COLORS.root, third: COLORS.third, fifth: COLORS.fifth, seventh: COLORS.seventh };
 
+/** Círculo repartido en sectores iguales, uno por color. */
+function pie(cx, cy, r, colors) {
+  const n = colors.length;
+  return colors.map((color, i) => {
+    const a0 = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+    const a1 = -Math.PI / 2 + ((i + 1) * 2 * Math.PI) / n;
+    const p = (a) => `${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)}`;
+    return `<path d="M${cx} ${cy} L${p(a0)} A${r} ${r} 0 0 1 ${p(a1)} Z" fill="${color}"/>`;
+  }).join('');
+}
+
 function esc(text) {
   return String(text).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 }
@@ -174,11 +185,18 @@ export function renderFretboard(o) {
       stroke = ROLE_COLORS[n.role];
       sw = 2.6;
     }
+    if (n.alpha != null) opacity = n.alpha;
     const size = label.length >= 3 ? radius * 0.62 : label.length === 2 ? radius * 0.82 : radius * 0.95;
+    // `colors`: relleno por zonas (un sector por color); `ring`: aro de énfasis
+    const zoned = Array.isArray(n.colors) && n.colors.length > 0;
+    if (zoned) { fill = n.colors[0]; stroke = n.ring ?? '#fffdf8'; sw = n.ring ? 3 : 1.2; }
+    const dot = zoned && n.colors.length > 1
+      ? pie(cx, cy, radius, n.colors) + `<circle class="note-dot" cx="${cx}" cy="${cy}" r="${radius}" fill="none" stroke="${stroke}" stroke-width="${sw}"/>`
+      : `<circle class="note-dot" cx="${cx}" cy="${cy}" r="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
     noteParts.push(
       `<g data-pos="${n.s}-${n.f}" opacity="${opacity}" pointer-events="none">`
       + (n.role === 'root' ? `<circle cx="${cx}" cy="${cy}" r="${radius + 3.4}" fill="none" stroke="${COLORS.root}" stroke-opacity=".25" stroke-width="2"/>` : '')
-      + `<circle class="note-dot" cx="${cx}" cy="${cy}" r="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`
+      + dot
       + (label ? `<text x="${cx}" y="${cy + size * 0.36}" text-anchor="middle" font-size="${size.toFixed(1)}" font-weight="700" fill="${textFill}">${esc(label)}</text>` : '')
       + '</g>',
     );

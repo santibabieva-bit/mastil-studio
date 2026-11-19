@@ -2,7 +2,7 @@
 
 import {
   PERMUTATION3_NAMES, PERMUTATION_NAMES, DIRECTIONS, EXERCISES, EX_FAMILIES, availablePairs, buildExercise, exerciseById,
-  exercisesByFamily, fingeringLine, stringPairLabel, cagedShapes, cagedPairs,
+  exercisesByFamily, fingeringLine, stringPairLabel, cagedShapes, cagedPairs, cagedBoard, CAGED_COLORS, CAGED_ORDER,
 } from '../core/exlib.js';
 import { INSTRUMENTS, beatsToAlphaTex } from '../core/alphatex.js';
 import { positionLabel, rootPosition } from '../core/exercises.js';
@@ -48,7 +48,7 @@ function mount(root, ctx) {
     pair: p.pair ? p.pair.split('-').map(Number) : null,
     harmonic: coerce(p.harm, true),
     shape: p.cg ?? 'all',
-    cagedPair: p.cpair ? p.cpair.split('-').map(Number) : null,
+    cagedPair: p.cpair === 'all' ? 'all' : p.cpair ? p.cpair.split('-').map(Number) : null,
     chord: p.chord ?? 'm7',
     arpPos: coerce(p.ap, 0),
     value: p.nv ?? '8',
@@ -62,9 +62,21 @@ function mount(root, ctx) {
   const stageScore = h('div');
   const board = h('div', { class: 'fb-wrap' });
   const infoBox = h('div', { class: 'stack' });
+  const navBox = h('div', { class: 'row no-print caged-nav' });
+  const legendBox = h('div', { class: 'row caged-legend' });
+  let activeRow = null;
   const listBox = h('div', { class: 'ex-list', role: 'listbox', 'aria-label': 'Ejercicios' });
   const paramBox = h('div', { class: 'stack' });
-  const score = createScore(stageScore, { fingers: st.fingers, onPlaying: (on) => ctx.engine.notePlaying('exlib', on) });
+  const score = createScore(stageScore, {
+    fingers: st.fingers,
+    onPlaying: (on) => ctx.engine.notePlaying('exlib', on),
+    // mientras suena, el mástil marca el par que toca en cada momento
+    onBeat: (beat) => {
+      if (!built?.beatRow) return;
+      const row = built.beatRow[score.state.beats.indexOf(beat)];
+      if (row != null && row !== activeRow) { activeRow = row; drawBoard(); updateNav(); }
+    },
+  });
   ctx.onCleanup(() => score.destroy());
 
   let built = null;
@@ -79,7 +91,7 @@ function mount(root, ctx) {
     built = buildExercise(st.ex, {
       tuning: tuningMidi(), root: st.root, quality: st.quality, pent: st.pent, position: st.position, direction: st.direction,
       perm: st.perm, perm3: st.perm3, variant: st.variant, startFret: st.startFret, string: st.string, pair: st.pair,
-      harmonic: st.harmonic, chord: st.chord, arpPos: st.arpPos, shape: st.shape, cagedPair: st.cagedPair,
+      harmonic: st.harmonic, chord: st.chord, arpPos: st.arpPos, shape: st.shape, cagedPair: cagedPairNow(ex),
     });
     const tuplet = st.value === '8t';
     const duration = tuplet ? 8 : Number(st.value);
@@ -98,7 +110,73 @@ function mount(root, ctx) {
     return ex;
   }
 
+  /** Par de cuerdas del ejercicio CAGED: el elegido, o uno por defecto (3.ª-2.ª terceras, 4.ª-2.ª sextas); null = todos. */
+  function cagedPairNow(ex) {
+    if (!ex.cagedParams || st.cagedPair === 'all') return null;
+    const pairs = cagedPairs(tuningMidi().length);
+    const want = st.cagedPair ?? (ex.k === 2 ? [2, 1] : [3, 1]);
+    return pairs.find((q) => q[0] === want[0] && q[1] === want[1]) ?? pairs[0];
+  }
+
+  /** Mástil con todas las notas de la escala por zonas CAGED (atenuadas) y el par activo resaltado. */
+  function drawCagedBoard() {
+    const tuning = tuningMidi();
+    const { notes, shapes } = cagedBoard({ tuning, collection: built.collection, maxFret: 17 });
+    const rows = built.rows ?? [];
+    const row = activeRow != null ? rows[activeRow] : null;
+    const hot = new Map();
+    if (row) for (const n of [row.low, row.high]) hot.set(`${n.s}-${n.f}`, n);
+    const fingerOf = new Map();
+    for (const b of built.beats) for (const n of b.notes) fingerOf.set(`${n.s}-${n.f}`, n.finger);
+    const focus = st.shape !== 'all' ? st.shape : null;
+    board.innerHTML = renderFretboard({
+      tuning, from: 0, to: 17,
+      notes: notes.map((n) => {
+        const key = `${n.s}-${n.f}`;
+        const isHot = hot.has(key);
+        const inFocus = !focus || n.zones.includes(focus);
+        return {
+          s: n.s, f: n.f, kind: isHot ? 'select' : 'note',
+          label: isHot && st.fingers && fingerOf.get(key) ? String(fingerOf.get(key)) : n.name,
+          colors: n.zones.length ? n.zones.map((z) => CAGED_COLORS[z]) : ['#8a8272'],
+          ring: isHot ? '#17231e' : null,
+          alpha: isHot ? 1 : row ? (inFocus ? 0.4 : 0.16) : (inFocus ? 0.55 : 0.2),
+          role: n.isRoot && !isHot ? 'root' : null,
+        };
+      }),
+      title: exerciseById(st.ex).title,
+    });
+    clear(legendBox);
+    for (const id of CAGED_ORDER) {
+      const spans = shapes.filter((z) => z.id === id).map((z) => `${z.from}-${z.to}`).join(' y ');
+      legendBox.append(h('span', { class: 'chip caged-chip', style: `border-left:10px solid ${CAGED_COLORS[id]}` }, `Forma ${id} · trastes ${spans}`));
+    }
+    legendBox.append(h('span', { class: 'hint' }, 'Donde las zonas se solapan, la nota lleva varios colores. Aro rojo = tónica.'));
+  }
+
+  function updateNav() {
+    clear(navBox);
+    const rows = built?.rows;
+    if (!rows?.length) return;
+    const i = activeRow ?? 0;
+    const r = rows[i];
+    const pair = r ? `cuerdas ${r.low.s + 1}-${r.high.s + 1}, trastes ${r.low.f} y ${r.high.f}` : '';
+    const go = (to) => {
+      activeRow = (to + rows.length) % rows.length;
+      drawBoard();
+      updateNav();
+      score.seekBeat(built.beatRow.indexOf(activeRow));
+    };
+    navBox.append(
+      button('◀ Par anterior', { variant: 'outline', onClick: () => go(i - 1) }),
+      button('Par siguiente ▶', { variant: 'outline', onClick: () => go(i + 1) }),
+      h('span', { class: 'hint' }, `Par ${i + 1} de ${rows.length} · ${pair}`),
+    );
+  }
+
   function drawBoard() {
+    if (exerciseById(st.ex).cagedParams && built.rows?.length) { drawCagedBoard(); return; }
+    clear(legendBox);
     const tuning = tuningMidi();
     const notes = built.notes;
     if (!notes.length) { board.innerHTML = ''; return; }
@@ -178,12 +256,12 @@ function mount(root, ctx) {
     if (params.has('cagedShape') && collection) {
       const shapes = cagedShapes({ tuning, collection });
       const opts = [{ value: 'all', label: 'Las 5 formas encadenadas' },
-        ...shapes.map((s) => ({ value: s.id, label: `Forma ${s.id} · trastes ${s.from}-${s.to}` }))];
+        ...CAGED_ORDER.map((id) => ({ value: id, label: `Forma ${id} · trastes ${shapes.filter((s) => s.id === id).map((s) => `${s.from}-${s.to}`).join(' y ')}` }))];
       if (!opts.some((o) => o.value === st.shape)) st.shape = 'all';
       row.push(f('Forma CAGED', select(opts, st.shape, (v) => { st.shape = v; refresh(); })));
       const pairs = cagedPairs(tuning.length);
-      const pairOpts = [{ value: 'all', label: 'Todos los pares' }, ...pairs.map((q) => ({ value: q.join('-'), label: stringPairLabel(q) }))];
-      row.push(f('Par de cuerdas', select(pairOpts, st.cagedPair ? st.cagedPair.join('-') : 'all', (v) => { st.cagedPair = v === 'all' ? null : v.split('-').map(Number); refresh(); })));
+      const pairOpts = [{ value: 'all', label: 'Todos los pares (uno tras otro)' }, ...pairs.map((q) => ({ value: q.join('-'), label: stringPairLabel(q) }))];
+      row.push(f('Par de cuerdas', select(pairOpts, cagedPairNow(ex) ? cagedPairNow(ex).join('-') : 'all', (v) => { st.cagedPair = v === 'all' ? 'all' : v.split('-').map(Number); activeRow = 0; refresh(); })));
     }
     if (params.has('pair') && collection) {
       const pairs = availablePairs({ tuning, collection, k: ex.k });
@@ -211,7 +289,7 @@ function mount(root, ctx) {
   function syncUrl() {
     ctx.setParams({
       ex: st.ex, root: st.root, q: st.quality, pent: st.pent, tun: st.tuning, pos: st.position, dir: st.direction, perm: st.perm,
-      perm3: st.perm3, var: st.variant, fr: st.startFret, str: st.string, pair: st.pair?.join('-'), harm: st.harmonic ? 1 : 0, cg: st.shape, cpair: st.cagedPair?.join('-'),
+      perm3: st.perm3, var: st.variant, fr: st.startFret, str: st.string, pair: st.pair?.join('-'), harm: st.harmonic ? 1 : 0, cg: st.shape, cpair: st.cagedPair === 'all' ? 'all' : st.cagedPair?.join('-'),
       chord: st.chord, ap: st.arpPos, nv: st.value, bpm: st.tempo, fing: st.fingers ? 1 : 0, inst: st.instrument,
     });
   }
@@ -219,7 +297,9 @@ function mount(root, ctx) {
   function refresh(full = false) {
     const ex = build();
     st.family = ex.family;
+    activeRow = built.rows?.length ? Math.min(activeRow ?? 0, built.rows.length - 1) : null;
     drawBoard();
+    updateNav();
     drawInfo(ex);
     if (full || !paramBox.children.length) { drawFamilies(); drawList(); }
     drawParams(ex);
@@ -263,7 +343,7 @@ function mount(root, ctx) {
         drawPlayback(),
       ),
       h('div', { class: 'stack' },
-        h('section', { class: 'panel stack' }, infoBox, board),
+        h('section', { class: 'panel stack' }, infoBox, navBox, board, legendBox),
         h('section', { class: 'panel stack' },
           scoreToolbar(score, { layout: false, extra: [
             button('Abrir en Tab Creator', { variant: 'outline', onClick: toTab }),
