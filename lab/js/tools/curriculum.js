@@ -19,6 +19,7 @@ export function collectProgress(ctx) {
     jam: ctx.storage.get('jam-scores', []),
     earplay: ctx.storage.get('earplay-history', []),
     blind: ctx.storage.get('blind-best', null),
+    neckmap: ctx.storage.get('neck-map', {}),
     practiceDays: Object.keys(practice?.days ?? {}).length ? daysPracticed(practice) : 0,
     songs: ctx.storage.get('repertoire', []),
     manual: ctx.storage.get('curriculum-manual', {}),

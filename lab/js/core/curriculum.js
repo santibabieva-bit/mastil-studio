@@ -8,9 +8,11 @@
  * `progress` = {
  *   speed: { [drillId]: { best } }, quiz: { total, byKey }, timing: [{score}], pitch: [{score}],
  *   jam: [{hits,total,level?}], earplay: [{ok,firstTry,total,level}], blind: {ok,avgMs}|null,
- *   practiceDays: number, songs: [...], manual: { [competencyId]: true }
+ *   neckmap: { "s:f": {ok,miss,ms,...} }, practiceDays: number, songs: [...], manual: { [competencyId]: true }
  * }
  */
+
+import { coverage } from './heatmap.js';
 
 const pct = (x) => Math.round(x * 100);
 
@@ -65,6 +67,10 @@ const EVALUATORS = {
     const ok = p.blind?.ok ?? 0;
     return { done: ok >= minOk, value: Math.min(1, ok / minOk), text: `Mejor ronda a ciegas: ${ok}/10 (objetivo ${minOk})` };
   },
+  neck({ minPct }, p) {
+    const cov = coverage(p.neckmap ?? {});
+    return { done: cov.pct >= minPct, value: Math.min(1, cov.pct / minPct), text: `${cov.solid}/${cov.total} puntos del mástil dominados (${pct(cov.pct)} %, objetivo ${pct(minPct)} %)` };
+  },
   days({ min }, p) {
     const d = p.practiceDays ?? 0;
     return { done: d >= min, value: Math.min(1, d / min), text: `${d}/${min} días practicados` };
@@ -102,6 +108,7 @@ export const CURRICULUM = [
       { id: 'l2-keys', label: 'Acordes de la tonalidad', tool: 'quiz', params: {}, criterion: { type: 'quiz', prefix: 'chordInKey', minAnswers: 20, minRate: 0.75 }, how: 'Acordes y números romanos al 75 %.' },
       { id: 'l2-land', label: 'Aterrizar en el acorde', tool: 'jam', params: { prog: 'blues12', focus: 'chord', challenge: 'chord' }, criterion: { type: 'jam', level: 'chord', minTotal: 16, minRate: 0.7 }, how: 'Jam Studio · reto nivel 2 con ≥ 70 % en 16 cambios.' },
       { id: 'l2-ear', label: 'Toca lo que oyes (nivel 1)', tool: 'earplay', params: { level: 1 }, criterion: { type: 'ear', level: 1, minRuns: 5, minRate: 0.7 }, how: '5 melodías cortas con ≥ 70 % a la primera.' },
+      { id: 'l2-map', label: 'Mástil dominado: 50 %', tool: 'neckmap', params: {}, criterion: { type: 'neck', minPct: 0.5 }, how: 'Mapa de mi mástil: la mitad de los puntos (trastes 0–12) en verde, es decir, acertados y rápidos.' },
       { id: 'l2-speed', label: 'Velocidad 100 bpm', tool: 'drills', params: {}, criterion: { type: 'speed', min: 100 }, how: 'Escalera de velocidad limpia a 100 bpm.' },
     ],
   },
@@ -127,6 +134,7 @@ export const CURRICULUM = [
       { id: 'l4-encl', label: 'Enclosures', tool: 'exlib', params: { ex: 'appr-enclosure' }, criterion: { type: 'manual' }, how: 'Enclosure sobre el arpegio a 90 bpm, limpio.' },
       { id: 'l4-ear', label: 'Toca lo que oyes (nivel 3)', tool: 'earplay', params: { level: 3 }, criterion: { type: 'ear', level: 3, minRuns: 5, minRate: 0.7 }, how: 'Melodías de 5 notas en escala mayor.' },
       { id: 'l4-songs', label: 'Repertorio: 2 canciones a tempo', tool: 'repertoire', params: {}, criterion: { type: 'songs', status: 'tempo', min: 2 }, how: 'Lleva dos canciones a su tempo objetivo.' },
+      { id: 'l4-map', label: 'Mástil dominado: 85 %', tool: 'neckmap', params: {}, criterion: { type: 'neck', minPct: 0.85 }, how: 'Mapa de mi mástil: casi todo el mástil en verde.' },
       { id: 'l4-speed', label: 'Velocidad 120 bpm', tool: 'drills', params: {}, criterion: { type: 'speed', min: 120 }, how: 'Escalera limpia a 120 bpm.' },
     ],
   },

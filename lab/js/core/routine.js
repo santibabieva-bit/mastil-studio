@@ -42,19 +42,23 @@ function pickFresh(list, rng, recent, key = (x) => x) {
 
 /**
  * @param {Array<{id,label,tool,params}>} [o.objectives] objetivos del currículo para hoy (se intercalan)
+ * @param {{weak:number,pct:number,worst?:string}} [o.neck] resumen del mapa del mástil (null si no hay datos)
  * @param {string[]} [o.recent] ids de drills/progresiones usados en sesiones recientes
  */
-export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {}, due = 0, focus = null, objectives = [], recent = [], rng = Math.random }) {
+export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {}, due = 0, focus = null, objectives = [], recent = [], neck = null, rng = Math.random }) {
   const full = Math.max(10, Math.min(120, Math.round(minutes)));
   // Sesiones largas: 3 minutos finales de estiramiento y vuelta a la calma.
   const cooldown = full >= 30 ? 3 : 0;
   const total = full - cooldown;
   const objective = objectives[0] ?? null;
   const base = objective ? [{ id: 'objective', weight: 0.28, tools: [objective.tool] }, ...BASE] : BASE;
-  const weights = base.map((b) => {
+  // Hay datos del mapa y aún queda mástil por dominar: bloque de zonas débiles.
+  const withNeck = neck && neck.pct < 0.9 ? [...base, { id: 'neckmap', weight: 0.12, tools: ['neckmap'] }] : base;
+  const weights = withNeck.map((b) => {
     let w = b.weight * (0.6 + 0.8 * balance(totals, b.tools));
     if (focus && b.id === focus) w *= 1.8;
     if (b.id === 'theory' && (weak.length || due > 0)) w *= 1.5;
+    if (b.id === 'neckmap' && neck.weak >= 3) w *= 1.5;
     return { ...b, w };
   });
   const sum = weights.reduce((s, b) => s + b.w, 0);
@@ -69,7 +73,7 @@ export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {},
   }
   const bonus = small.reduce((s, b) => s + b.min, 0);
   if (keep.length) keep.sort((a, b) => b.min - a.min)[0].min += bonus;
-  blocks = base.map((b) => keep.find((k) => k.id === b.id)).filter(Boolean);
+  blocks = withNeck.map((b) => keep.find((k) => k.id === b.id)).filter(Boolean);
   // Ajusta el redondeo para que sume exactamente `total`.
   let diff = total - blocks.reduce((s, b) => s + b.min, 0);
   let i = 0;
@@ -87,6 +91,8 @@ export function buildRoutine({ minutes = 30, root = 'A', weak = [], totals = {},
     switch (b.id) {
       case 'objective':
         return { id: b.id, minutes: b.min, tool: objective.tool, title: `Objetivo: ${objective.label}`, params: objective.params ?? {}, why: objective.how ?? 'Siguiente puerta de tu currículo.', objective: objective.id };
+      case 'neckmap':
+        return { id: b.id, minutes: b.min, tool: 'neckmap', title: 'Zonas débiles del mástil', params: {}, why: neck.weak ? `Tienes ${neck.weak} puntos flojos${neck.worst ? ` (el peor: ${neck.worst})` : ''}. Diez notas que insisten justo ahí.` : `Llevas el ${Math.round(neck.pct * 100)} % del mástil dominado: sigue llenándolo.` };
       case 'warmup':
         return { id: b.id, minutes: b.min, tool: 'metronome', title: 'Calentamiento', params: { bpm: 70 }, why: 'Manos sueltas: notas lentas y limpias con el metrónomo. Hombros bajos, muñecas rectas y respira.' };
       case 'technique':

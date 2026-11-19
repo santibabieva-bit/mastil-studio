@@ -82,3 +82,33 @@ test('heatColor: null sin datos, rojo→verde', () => {
   assert.match(heatColor(0), /hsl\(0 /);
   assert.match(heatColor(1), /hsl\(120 /);
 });
+
+import { buildRoutine } from '../lab/js/core/routine.js';
+import { curriculumStatus } from '../lab/js/core/curriculum.js';
+
+test('rutina: sin datos del mapa no hay bloque; con datos y zonas débiles sí, y suma exacta', () => {
+  const none = buildRoutine({ minutes: 40, rng: () => 0.4 });
+  assert.ok(!none.blocks.some((b) => b.id === 'neckmap'));
+  for (const minutes of [20, 40, 60, 90]) {
+    const r = buildRoutine({ minutes, neck: { weak: 5, pct: 0.3, worst: '3ª cuerda, traste 7' }, rng: () => 0.4 });
+    assert.equal(r.blocks.reduce((a, b) => a + b.minutes, 0), r.total, `${minutes} min`);
+    if (minutes >= 40) {
+      const b = r.blocks.find((x) => x.id === 'neckmap');
+      assert.ok(b && b.tool === 'neckmap');
+      assert.match(b.why, /3ª cuerda, traste 7/);
+    }
+  }
+  const done = buildRoutine({ minutes: 60, neck: { weak: 0, pct: 0.95 }, rng: () => 0.4 });
+  assert.ok(!done.blocks.some((b) => b.id === 'neckmap'), 'con el mástil dominado no insiste');
+});
+
+test('currículo: «mástil dominado» se mide con el mapa', () => {
+  const find = (st, id) => st.levels.flatMap((l) => l.competencies).find((c) => c.id === id);
+  assert.equal(find(curriculumStatus({}), 'l2-map').done, false);
+  let m = {};
+  for (let s = 0; s < 6; s += 1) for (let f = 0; f <= 12; f += 1) for (let i = 0; i < 4; i += 1) m = recordSpot(m, s, f, true, 1500, T0);
+  const st = curriculumStatus({ neckmap: m });
+  assert.equal(find(st, 'l2-map').done, true);
+  assert.equal(find(st, 'l4-map').done, true);
+  assert.match(find(st, 'l2-map').text, /78\/78/);
+});

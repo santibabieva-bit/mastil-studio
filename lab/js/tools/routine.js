@@ -6,6 +6,7 @@
 
 import { ROOT_CHOICES, prettyNote } from '../core/music.js';
 import { buildRoutine } from '../core/routine.js';
+import { coverage, weakestSpots } from '../core/heatmap.js';
 import { dateKey, totalsByTool } from '../core/practice.js';
 import { dueCount } from '../core/srs.js';
 import { emptyStats, weakSpots } from '../core/quiz.js';
@@ -15,7 +16,7 @@ import { todayObjectives } from '../core/curriculum.js';
 import { header } from './common.js';
 import { collectProgress } from './curriculum.js';
 
-const TOOL_LABEL = { earplay: 'Toca lo que oyes', repertoire: 'Repertorio', curriculum: 'Ruta', exlib: 'Biblioteca', blind: 'Mástil a ciegas', metronome: 'Metrónomo', exercises: 'Ejercicios', drills: 'Drills', timing: 'Timing Lab', bendlab: 'Bends y vibrato', triads: 'Triad Lab', quiz: 'Theory Trainer', jam: 'Jam Studio', ear: 'Ear Trainer', backing: 'Backing' };
+const TOOL_LABEL = { neckmap: 'Mapa del mástil', earplay: 'Toca lo que oyes', repertoire: 'Repertorio', curriculum: 'Ruta', exlib: 'Biblioteca', blind: 'Mástil a ciegas', metronome: 'Metrónomo', exercises: 'Ejercicios', drills: 'Drills', timing: 'Timing Lab', bendlab: 'Bends y vibrato', triads: 'Triad Lab', quiz: 'Theory Trainer', jam: 'Jam Studio', ear: 'Ear Trainer', backing: 'Backing' };
 
 function mount(root, ctx) {
   const today = dateKey();
@@ -51,6 +52,19 @@ function mount(root, ctx) {
     return { timing: 'timing', pitch: 'pitch', theory: 'theory', speed: 'technique', ear: 'ear', improv: 'jam' }[f.id] ?? null;
   }
 
+  /** Resumen del mapa del mástil para la rutina; null mientras no haya datos. */
+  function neckSummary() {
+    const map = ctx.storage.get('neck-map', {});
+    if (!Object.keys(map).length) return null;
+    const weak = weakestSpots(map, 8);
+    const w = weak[0];
+    return {
+      weak: weak.length,
+      pct: coverage(map).pct,
+      worst: w ? `${w.s + 1}ª cuerda, traste ${w.f}` : null,
+    };
+  }
+
   function generate() {
     const stats = ctx.storage.get('quiz-stats', null) ?? emptyStats();
     cfg.plan = buildRoutine({
@@ -62,6 +76,7 @@ function mount(root, ctx) {
       focus: focusBlock(),
       objectives: todayObjectives(collectProgress(ctx), 2),
       recent: ctx.storage.get('routine-recent', []),
+      neck: neckSummary(),
     });
     // Variación deliberada: recuerda lo usado en las últimas sesiones para no repetirlo.
     const used = cfg.plan.blocks.map((b) => b.params?.drill ?? b.params?.prog).filter(Boolean);
