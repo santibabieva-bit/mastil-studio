@@ -14,6 +14,7 @@ import {
   button, clear, h, segmented, slider,
 } from '../ui/dom.js';
 import { header } from './common.js';
+import { logSpot } from './neckmap.js';
 
 const ROUND = 10;
 
@@ -99,6 +100,7 @@ function mount(root, ctx) {
     const ms = performance.now() - round.askedAt;
     const ok = verdict !== 'wrong';
     round.results.push({ ok, ms });
+    logSpot(ctx, round.q.s, round.q.f, ok, ms);
     ctx.logSeconds(Math.round(ms / 1000));
     msg(ok
       ? `✓ ${prettyNote(midiName(midi))}${verdict === 'octave' ? ' (otra octava)' : ''} · ${(ms / 1000).toFixed(1)} s`
@@ -111,6 +113,7 @@ function mount(root, ctx) {
     round.active = false;
     const ms = performance.now() - round.askedAt;
     round.results.push({ ok, ms });
+    logSpot(ctx, round.q.s, round.q.f, ok, ms);
     msg(ok ? '✓ Bien' : `✗ Era el traste ${round.q.f} (${prettyNote(midiName(round.q.midi))}).`, ok ? 'ok' : 'bad');
     next();
   }

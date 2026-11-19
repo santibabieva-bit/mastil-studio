@@ -32,6 +32,7 @@ import exlib from './exlib.js';
 import earplay from './earplay.js';
 import repertoire from './repertoire.js';
 import curriculum from './curriculum.js';
+import neckmap from './neckmap.js';
 
 export const GROUPS = [
   { id: 'neck', label: 'Aprender el mástil' },
@@ -42,7 +43,7 @@ export const GROUPS = [
 ];
 
 export const TOOLS = [
-  navigator, blind, triads, quiz, chords,
+  navigator, blind, neckmap, triads, quiz, chords,
   curriculum, routine, repertoire, drills, timing, exlib, exercises, audiolab, recorder, metronome, strum, rhythm, vibrato, log,
   jam, backing, tab, score, licks, randomiser, capo,
   ear, earplay, eq, bendlab, tuner,

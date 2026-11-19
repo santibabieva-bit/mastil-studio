@@ -8,6 +8,7 @@ import { hitFromEvent, renderFretboard } from '../ui/fretboard.js';
 import { button, clear, h, segmented } from '../ui/dom.js';
 import { dueCount } from '../core/srs.js';
 import { header } from './common.js';
+import { logSpot } from './neckmap.js';
 
 const MODES = [
   { value: 'timed', label: '2 minutos' },
@@ -193,6 +194,8 @@ function mount(root, ctx) {
     stats = recordAnswer(stats, q, ok);
     save();
     const now = performance.now();
+    const spot = q.type === 'fretNote' ? q.board : q.type === 'findNote' ? q.answer : null;
+    if (spot) logSpot(ctx, spot.s, spot.f, ok, now - run.lastTick);
     ctx.logSeconds(Math.min(25, (now - run.lastTick) / 1000));
     run.lastTick = now;
 

@@ -25,13 +25,14 @@ ZIPs: [v1.0](versions/mastil-studio-v1.0.zip) · [v1.1](versions/mastil-studio-v
 
 ## Mástil Lab (nuevo)
 
-Además del generador de plantillas, el repo incluye **Mástil Lab**, un estudio de guitarra interactivo en `http://127.0.0.1:4173/lab/`: 30 herramientas que suenan, preguntan y recuerdan lo que practicas. Todo funciona en el navegador, sin cuentas ni dependencias; el progreso se guarda en `localStorage` y, tras la primera visita, **funciona sin conexión** (instalable como app).
+Además del generador de plantillas, el repo incluye **Mástil Lab**, un estudio de guitarra interactivo en `http://127.0.0.1:4173/lab/`: 31 herramientas que suenan, preguntan y recuerdan lo que practicas. Todo funciona en el navegador, sin cuentas ni dependencias; el progreso se guarda en `localStorage` y, tras la primera visita, **funciona sin conexión** (instalable como app).
 
 | Grupo | Herramienta | Qué hace |
 |---|---|---|
 | Aprender el mástil | **Fretboard Navigator** | Mástil de hasta 24 trastes con audio al pulsar, entrada MIDI (lo que tocas se ilumina), 14 afinaciones (incluye bajo y 7 cuerdas), modo zurdo, posiciones «N por cuerda», cajas, CAGED, voicings e inversiones, etiquetas (nombre, Do-Re-Mi, grado), exportar PNG/SVG y enlace compartible |
 | | **Triad Lab** | Tríadas y cuatríadas por juegos de cuerdas e inversiones, acorde sobre su escala, arpegios por posición con dedos, conducción de voces (camino de mínimo movimiento entre acordes), superposición de dos acordes y lámina CAGED de 5 mástiles imprimible |
 | | **Mástil a ciegas** | La app pide una nota en una cuerda y tú la encuentras sin ver el mástil; respuesta por micrófono, guitarra MIDI o manual, rondas de 10 con tiempo medio |
+| | **Mapa de mi mástil** | Mapa de calor por cuerda y traste con tus aciertos y tiempos (alimentado por el Theory Trainer y el Mástil a ciegas) y práctica con repetición espaciada en tus zonas débiles |
 | | **Theory Trainer** | Quizzes de notas del mástil, encontrar la nota, intervalos, acordes de la tonalidad, números romanos, modos, armaduras y **armonía funcional** (dominantes secundarios, intercambio modal, sustituto tritonal); 3 niveles, modo 2 minutos, puntos débiles y **repaso espaciado** (cajas de 1–32 días) |
 | | **Chord & Key Finder** | Nombra un acorde a partir de sus notas, muestra sus formas, lista los acordes de cualquier tonalidad/modo y deduce la tonalidad de una canción |
 | Practicar | **Ruta de aprendizaje** | Cinco niveles con puertas medibles (mástil, pulso, aterrizajes, oído, repertorio, velocidad…): lee lo que has practicado, te dice qué toca ahora y alimenta la rutina diaria. Las competencias que el micrófono no puede medir con fiabilidad se confirman a mano |
