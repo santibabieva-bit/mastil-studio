@@ -2,11 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PROGRESSIONS, SETS, STD, TRIAD_EXERCISES, buildTriadExercise, cagedWindows, checkDrill, diatonic, drillQuestion,
-  earQuestion, inversionLadder, keyPcs, passingFrets, recordDrill, spreadVoicing, voiceMoves,
+  earQuestion, inversionLadder, keyPcs, matchVoices, passingFrets, recordDrill, spreadVoicing, stepsToBeats, voiceMoves,
 } from '../lab/js/core/triadex.js';
 import { chordPcs } from '../lab/js/core/chords.js';
 import { makeRng, mod } from '../lab/js/core/music.js';
 import { morphKeys, dotStyle } from '../lab/js/ui/liveboard.js';
+import { beatsToAlphaTex } from '../lab/js/core/alphatex.js';
 
 const chordSteps = (steps) => steps.filter((s) => s.kind === 'chord');
 const pcsOk = (st) => {
@@ -152,4 +153,47 @@ test('mástil vivo: claves por cuerda para deslizar y estilos iguales al dibujo 
   assert.equal(dotStyle({ s: 0, f: 1, role: 'root' }).halo, '#d84a3e');
   assert.equal(dotStyle({ s: 0, f: 1, kind: 'select' }).fill, '#df812f');
   assert.deepEqual(dotStyle({ s: 0, f: 1, colors: ['#111', '#222'] }).colors, ['#111', '#222']);
+});
+
+test('flechas: cada voz va a la nota a la que de verdad se mueve, aunque cambie de cuerda', () => {
+  const nt = (s, f) => ({ s, f, midi: STD[s] + f });
+  // Do en 2.ª inversión (6-5-4) → Do fundamental (5-4-3): Do y Mi no se mueven, el Sol sube a la 3.ª cuerda.
+  const a = [nt(5, 3), nt(4, 3), nt(3, 2)];
+  const b = [nt(4, 3), nt(3, 2), nt(2, 0)];
+  assert.deepEqual(matchVoices(a, b), [2, 0, 1]);
+  const steps = buildTriadExercise('inv-v', { rootPc: 0, quality: 'maj', shape: 'C' }).steps;
+  for (let i = 1; i < steps.length; i += 1) {
+    const { moves, common } = voiceMoves(steps[i - 1], steps[i]);
+    assert.equal(moves.length + common.length, 3);
+    for (const m of moves) {
+      // El origen de la flecha es una nota del acorde anterior.
+      assert.ok(steps[i - 1].notes.some((n) => n.s === m.from.s && n.f === m.from.f));
+      assert.ok(steps[i].notes.some((n) => n.s === m.to.s && n.f === m.to.f));
+    }
+    // Ninguna voz salta más que la alternativa de emparejar por orden de cuerdas.
+    const total = moves.reduce((t, m) => t + Math.abs(m.semis), 0);
+    const byOrder = steps[i - 1].notes.reduce((t, n, k) => t + Math.abs(n.midi - steps[i].notes[k].midi), 0);
+    assert.ok(total <= byOrder);
+  }
+});
+
+test('partitura: los pasos se convierten en figuras con ligaduras en la barra y nombre de acorde', () => {
+  const steps = buildTriadExercise('passing', { keyPc: 0, set: 0 }).steps;
+  const { beats, firstBeat } = stepsToBeats(steps);
+  assert.equal(firstBeat.length, steps.length);
+  assert.equal(beats[0].chord, 'C');
+  const ticks = { 1: 192, 2: 96, 4: 48, 8: 24, 16: 12 };
+  const total = beats.reduce((t, b) => t + (b.tuplet ? 16 : ticks[b.dur]), 0);
+  assert.equal(total, steps.reduce((t, s) => t + s.d, 0) * 48);
+  // Los pasos de notas de paso solo escriben la nota que suena (no las sostenidas).
+  const pass = steps.findIndex((s) => s.kind === 'pass');
+  assert.equal(beats[firstBeat[pass]].notes.length, 1);
+  const tex = beatsToAlphaTex(beats, { duration: 4 });
+  assert.match(tex, /ch "C"/);
+  // Una blanca que empieza en el 4.º tiempo se parte en dos negras ligadas.
+  const tied = stepsToBeats([{ notes: [{ s: 0, f: 1 }], d: 3 }, { notes: [{ s: 0, f: 3 }], d: 2 }]).beats;
+  assert.deepEqual(tied.map((b) => b.dur), [2, 4, 4, 4]);
+  assert.equal(tied[3].notes[0].tie, true);
+  const pairs = stepsToBeats(buildTriadExercise('pairs', { keyPc: 0 }).steps).beats;
+  assert.ok(pairs.every((b) => b.tuplet && b.dur === 8));
 });

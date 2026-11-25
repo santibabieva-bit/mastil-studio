@@ -10,10 +10,11 @@ import { CAGED_COLORS } from '../core/exlib.js';
 import {
   INVERSION_LABELS, PROGRESSIONS, QUALITIES, QUALITY_LABEL, ROLE_LABEL, SETS, TRIAD_EXERCISES, TRIAD_FAMILIES,
   buildTriadExercise, cagedWindows, checkDrill, chordStep, describeStep, diatonic, drillQuestion, earQuestion,
-  recordDrill, setName, triadExercise, voiceMoves,
+  recordDrill, setName, stepsToBeats, triadExercise, voiceMoves,
 } from '../core/triadex.js';
+import { beatsToAlphaTex } from '../core/alphatex.js';
 import { COLORS, createAnimBoard, createPlayer, noteName } from '../ui/animboard.js';
-import { createTabStrip } from '../ui/tabstrip.js';
+import { createScore, scoreToolbar } from '../ui/score.js';
 import {
   button, clear, h, segmented, select, slider, toggle,
 } from '../ui/dom.js';
@@ -51,7 +52,28 @@ function mount(root, ctx) {
 
   const board = createAnimBoard({ tuning: TUNING, from: 0, to: 15, title: 'Tríadas en movimiento' });
   board.el.classList.add('is-clickable');
-  const tab = createTabStrip({ onSeek: (i) => { player.stop(); player.show(i, { sound: true }); syncPlay(); } });
+  // Partitura y tablatura de alphaTab; el sonido lo pone el reproductor animado
+  // y el cursor de la partitura sigue al paso que suena.
+  const scoreHost = h('div', { class: 'triad-score' });
+  const score = createScore(scoreHost, { stave: 'scoretab', scale: 0.85 });
+  ctx.onCleanup(() => score.destroy());
+  const scoreBox = h('div', { class: 'stack' }, scoreToolbar(score, { playback: false, layout: false }), scoreHost);
+  let firstBeat = [];
+  let clickHooked = false;
+  score.on((s) => {
+    if (clickHooked || !s.api?.beatMouseDown) return;
+    clickHooked = true;
+    // Pulsar una nota de la partitura salta a ese paso.
+    s.api.beatMouseDown.on((beat) => {
+      const b = score.state.beats.indexOf(beat);
+      if (b < 0 || !steps.length) return;
+      let i = 0;
+      while (i + 1 < firstBeat.length && firstBeat[i + 1] <= b) i += 1;
+      player.stop();
+      syncPlay();
+      player.show(i, { sound: true });
+    });
+  });
   const bigName = h('div', { class: 'big-number anim-chord' }, '');
   const caption = h('p', { class: 'anim-caption' }, '');
   const legend = h('div', { class: 'anim-legend' });
@@ -76,7 +98,7 @@ function mount(root, ctx) {
   }
 
   function onStep(i, s) {
-    tab.highlight(i);
+    if (firstBeat[i] != null) score.seekBeat(firstBeat[i]);
     if (s.chord) bigName.textContent = prettyNote(s.chord.name);
     caption.textContent = s.kind === 'chord' ? describeStep(s)
       : s.kind === 'pass' ? `Nota de paso: ${noteName(s.notes[s.notes.length - 1].midi)} (de la escala)`
@@ -84,9 +106,14 @@ function mount(root, ctx) {
     if (s.shape) board.zones([{ from: s.shape.from, to: s.shape.to, color: CAGED_COLORS[s.shape.id], label: `Forma ${s.shape.id}`, alpha: 0.13 }]);
     else board.zones([]);
     board.clearArrows();
+    board.dots([], 'trail');
     if (st.arrows && s.kind === 'chord' && !st.memory) {
       const prev = lastChordBefore(i);
       const { moves, common } = voiceMoves(prev, s);
+      // Fantasma de dónde estaba cada voz que se mueve: la flecha sale de ahí.
+      board.dots(moves.map((m) => ({
+        key: `g-${m.from.voice}`, s: m.from.s, f: m.from.f, label: '', fill: '#fffdf8', stroke: ROLE_COLOR[m.from.role] ?? COLORS.accent, dashed: true, alpha: 0.7, scale: 0.8, instant: true,
+      })), 'trail');
       for (const m of moves) {
         if (Math.abs(m.semis) > 0) board.arrow(m.from, m.to, { color: ROLE_COLOR[m.to.role] ?? COLORS.accent, bend: 0.3, width: 2.2, label: `${m.semis > 0 ? '+' : ''}${m.semis}` });
       }
@@ -120,14 +147,13 @@ function mount(root, ctx) {
     clear(stage);
     if (ex.interactive) {
       steps = [];
-      tab.load([]);
-      tab.el.hidden = true;
+      scoreBox.hidden = true;
       transport.hidden = true;
       if (ex.interactive === 'drill') startDrill();
       else startEar();
       return;
     }
-    tab.el.hidden = false;
+    scoreBox.hidden = false;
     transport.hidden = false;
     const { steps: raw } = buildTriadExercise(st.ex, {
       keyPc: keyPc(), rootPc: keyPc(), quality: st.quality, set: st.set, inversion: st.inversion, shape: st.shape,
@@ -136,11 +162,19 @@ function mount(root, ctx) {
     steps = decorate(raw);
     if (!steps.length) {
       caption.textContent = 'No hay formas cómodas con estos ajustes: prueba otro grupo de cuerdas o posición.';
-      tab.load([]);
+      scoreBox.hidden = true;
       return;
     }
-    tab.load(steps, { header: (s) => (s.chord ? `${s.chord.roman ? `${s.chord.roman} ` : ''}${prettyNote(s.chord.name)}` : '') });
-    tab.el.classList.toggle('is-hidden', st.memory);
+    const conv = stepsToBeats(steps);
+    firstBeat = conv.firstBeat;
+    score.load(beatsToAlphaTex(conv.beats, {
+      title: ex.title,
+      subtitle: `${prettyNote(st.key)} · ${steps.filter((x) => x.kind === 'chord').length} acordes`,
+      tempo: st.bpm,
+      duration: 4,
+      showPicking: false,
+    }));
+    scoreHost.classList.toggle('is-hidden', st.memory);
     player.load(steps, {
       next: st.next && !st.memory,
       keyOf: (n, j, i) => (steps[i].kind === 'pass' || steps[i].kind === 'chord' ? `v-${n.voice ?? j}` : `a-${n.s}-${n.f}`),
@@ -155,7 +189,7 @@ function mount(root, ctx) {
   function reveal() {
     st.memory = false;
     memToggle.querySelector('input').checked = false;
-    tab.el.classList.remove('is-hidden');
+    scoreHost.classList.remove('is-hidden');
     player.setOptions({ mask: null, next: st.next });
     ctx.toast('Formas reveladas: compara con lo que has tocado.');
   }
@@ -425,8 +459,8 @@ function mount(root, ctx) {
           h('div', { class: 'row row--between' }, bigName, legend),
           board.el,
           caption,
-          tab.el,
           transport,
+          scoreBox,
           stage,
         ),
       ),

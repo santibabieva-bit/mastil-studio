@@ -58,6 +58,7 @@ const RIGHT_FINGER = { p: 1, i: 2, m: 3, a: 4 };
 /** Efectos de una nota (sin llaves). */
 function noteEffectList(note, { showFingers }) {
   const fx = [];
+  if (note.tie) fx.push('t');
   for (const tech of note.tech ?? []) {
     if (tech === 'h' || tech === 'p') fx.push('h');
     else if (tech === '/' || tech === '\\') fx.push('sl');
@@ -125,6 +126,7 @@ export function beatsToAlphaTex(beats, o = {}) {
     const prefix = dur !== current ? `:${dur} ` : '';
     current = dur;
     const beatFx = [];
+    if (beat.chord) beatFx.push(`ch ${quote(beat.chord)}`);
     if (isTuplet) beatFx.push('tu 3');
     if (beat.dot) beatFx.push('d');
     if (showPicking && beat.pick === 'D') beatFx.push('sd');

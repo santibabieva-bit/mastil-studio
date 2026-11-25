@@ -518,7 +518,61 @@ export function buildTriadExercise(id, params = {}) {
     ...ex.defaults,
     ...Object.fromEntries(Object.entries(params).filter(([, v]) => v != null)),
   };
-  return { ex, steps: ex.run(p), params: p };
+  return { ex, steps: assignVoices(ex.run(p)), params: p };
+}
+
+/**
+ * Empareja las voces de dos acordes por el menor movimiento: las notas que
+ * no cambian de sitio son la misma voz, y el resto va a la nota más cercana
+ * en altura (aunque cambie de cuerda). Devuelve perm: voz k de `a` → nota perm[k] de `b`.
+ */
+export function matchVoices(a, b) {
+  const n = a.length;
+  if (n !== b.length || n > 4) return a.map((_, i) => i);
+  const perms = [];
+  const walk = (used, acc) => {
+    if (acc.length === n) { perms.push(acc); return; }
+    for (let i = 0; i < n; i += 1) if (!used.has(i)) walk(new Set([...used, i]), [...acc, i]);
+  };
+  walk(new Set(), []);
+  const cost = (x, y) => (x.s === y.s && x.f === y.f ? 0 : 0.5 + Math.abs(x.midi - y.midi) + Math.abs(x.s - y.s) * 0.01);
+  let best = perms[0];
+  let bestCost = Infinity;
+  for (const p of perms) {
+    const c = p.reduce((t, j, k) => t + cost(a[k], b[j]), 0);
+    if (c < bestCost) { bestCost = c; best = p; }
+  }
+  return best;
+}
+
+/**
+ * Numera las voces a lo largo del ejercicio para que cada una siga a la nota
+ * a la que realmente se mueve (lo usan las flechas y el deslizamiento).
+ */
+export function assignVoices(steps) {
+  let last = null;
+  return steps.map((st) => {
+    if (st.kind === 'chord') {
+      const notes = st.notes.map((n, i) => ({ ...n, voice: i }));
+      if (last && last.notes.length === notes.length) {
+        const perm = matchVoices(last.notes, notes);
+        perm.forEach((j, k) => { notes[j].voice = last.notes[k].voice; });
+      }
+      const out = { ...st, notes };
+      last = out;
+      return out;
+    }
+    if (st.kind === 'pass' && last) {
+      return {
+        ...st,
+        notes: st.notes.map((n) => {
+          const same = last.notes.find((m) => m.s === n.s && (n.held ? m.f === n.f : true));
+          return { ...n, voice: same?.voice ?? n.voice };
+        }),
+      };
+    }
+    return st;
+  });
 }
 
 /** Voces que cambian entre dos pasos de acorde: [{ from, to, semis }] y notas comunes. */
@@ -527,11 +581,56 @@ export function voiceMoves(a, b) {
   const moves = [];
   const common = [];
   a.notes.forEach((n, i) => {
-    const m = b.notes[i];
+    const m = b.notes.find((x) => x.voice === n.voice) ?? b.notes[i];
     if (n.s === m.s && n.f === m.f) common.push(m);
     else moves.push({ from: n, to: m, semis: m.midi - n.midi });
   });
   return { moves, common };
+}
+
+/* ───────────── partitura (alphaTex) ───────────── */
+
+const TICKS_PER_BEAT = 48;
+const NOTE_VALUES = [[192, 1], [96, 2], [48, 4], [24, 8], [12, 16]];
+
+/**
+ * Pasos → beats de alphaTex (blanca, negra, corchea, tresillo…), partiendo
+ * con ligadura lo que cruza la barra de compás. Devuelve también el índice
+ * del primer beat de cada paso para sincronizar el cursor de la partitura.
+ */
+export function stepsToBeats(steps, { barBeats = 4 } = {}) {
+  const barTicks = barBeats * TICKS_PER_BEAT;
+  const beats = [];
+  const firstBeat = [];
+  let pos = 0;
+  let prevChord = null;
+  for (const st of steps) {
+    firstBeat.push(beats.length);
+    const notes = st.notes.filter((n) => !n.held).map((n) => ({ s: n.s, f: n.f }));
+    const name = st.kind === 'chord' ? st.chord?.name : null;
+    const chord = name && name !== prevChord ? name : null;
+    if (name) prevChord = name;
+    const d = st.d ?? 1;
+    // Tresillos de corchea: un tercio de pulso.
+    if (Math.abs(d * 3 - Math.round(d * 3)) < 1e-6 && Math.round(d * 3) % 3 !== 0 && Math.abs(d - 0.5) > 1e-6 && d < 1) {
+      beats.push({ notes, dur: 8, tuplet: true, chord });
+      pos = (pos + 16) % barTicks;
+      continue;
+    }
+    let left = Math.round(d * TICKS_PER_BEAT);
+    let first = true;
+    while (left > 0) {
+      const room = barTicks - pos;
+      let chunk = Math.min(left, room);
+      const [t, dur] = NOTE_VALUES.find(([tk]) => tk <= chunk) ?? [12, 16];
+      chunk = t;
+      beats.push({ notes: notes.map((n) => ({ ...n, tie: !first })), dur, chord: first ? chord : null });
+      first = false;
+      left -= chunk;
+      pos = (pos + chunk) % barTicks;
+    }
+  }
+  return { beats, firstBeat };
 }
 
 /** Descripción corta de un paso de acorde: «Cm · 1.ª inversión · cuerdas 234». */

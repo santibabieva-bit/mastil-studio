@@ -425,22 +425,9 @@ details.syntax pre { font-family: var(--font-mono); font-size: 0.82rem; white-sp
 .anim-chord { font-family: var(--font-display, Georgia, serif); font-size: 2rem; text-align: center; min-height: 1.3em; transition: color .3s; }
 .anim-legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: .85rem; }
 .anim-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
-/* Tablatura en tira (sigue al mástil animado) */
-.tabstrip-wrap { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 4px; align-items: start; transition: filter .3s; }
-.tabstrip-wrap.is-hidden .tabstrip { filter: blur(6px); }
-.tabstrip-names, .tabstrip-col { display: grid; grid-template-rows: 20px repeat(6, 20px); font: 600 12px/20px ui-monospace, Consolas, monospace; }
-.tabstrip-names span { color: #8a8272; text-align: center; }
-.tabstrip { display: flex; overflow-x: auto; scroll-behavior: smooth; padding-bottom: 4px; }
-.tabstrip-col { flex: 0 0 auto; border: 0; padding: 0 2px; background: transparent; cursor: pointer; border-radius: 6px; text-align: center; color: var(--ink, #2b2a26); }
-.tabstrip-col.is-bar { border-left: 2px solid #b9ad95; }
-.tabstrip-col:hover { background: rgba(223, 129, 47, .08); }
-.tabstrip-col.is-now { background: rgba(223, 129, 47, .18); }
-.tabstrip-head { font-family: inherit; font-size: 11px; font-weight: 800; white-space: nowrap; text-align: left; color: #3b73c9; overflow: visible; }
-.tabstrip-cell { background: linear-gradient(#cfc6b2, #cfc6b2) center / 100% 1px no-repeat; }
-.tabstrip-cell:not(:empty) { background: none; }
-.tabstrip-cell.role-root { color: #d84a3e; }
-.tabstrip-cell.role-third { color: #3f8f5a; }
-.tabstrip-cell.role-fifth { color: #c46a1d; }
+/* Partitura de las tríadas: borrosa en el modo de memoria */
+.triad-score { transition: filter .3s; }
+.triad-score.is-hidden { filter: blur(7px); }
 .anim-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
 .anim-compare { display: grid; gap: 10px; }
 .pick-view { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; }

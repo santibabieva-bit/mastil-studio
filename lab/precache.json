@@ -102,7 +102,6 @@
   "./js/ui/fretboard.js",
   "./js/ui/liveboard.js",
   "./js/ui/score.js",
-  "./js/ui/tabstrip.js",
   "./lab.css",
   "./manifest.webmanifest",
   "./vendor/alphatab/alphaTab.core.min.mjs",
