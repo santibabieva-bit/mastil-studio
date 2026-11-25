@@ -55,12 +55,20 @@ function mount(root, ctx) {
   // Partitura y tablatura de alphaTab; el sonido lo pone el reproductor animado
   // y el cursor de la partitura sigue al paso que suena.
   const scoreHost = h('div', { class: 'triad-score' });
-  const score = createScore(scoreHost, { stave: 'scoretab', scale: 0.85 });
+  // Sin cursor ni barra de progreso: se iluminan las notas que hay que tocar.
+  const score = createScore(scoreHost, { stave: 'scoretab', scale: 0.85, cursor: false });
   ctx.onCleanup(() => score.destroy());
   const scoreBox = h('div', { class: 'stack' }, scoreToolbar(score, { playback: false, layout: false }), scoreHost);
   let firstBeat = [];
   let clickHooked = false;
+  let hlBeat = null;
+  let lastBounds = null;
   score.on((s) => {
+    // Tras cada maquetación (carga, zoom, tipo de pentagrama) se recoloca el resaltado.
+    if (s.bounds && s.bounds !== lastBounds) {
+      lastBounds = s.bounds;
+      if (hlBeat != null) score.highlightBeat(hlBeat);
+    }
     if (clickHooked || !s.api?.beatMouseDown) return;
     clickHooked = true;
     // Pulsar una nota de la partitura salta a ese paso.
@@ -98,7 +106,8 @@ function mount(root, ctx) {
   }
 
   function onStep(i, s) {
-    if (firstBeat[i] != null) score.seekBeat(firstBeat[i]);
+    hlBeat = firstBeat[i] ?? null;
+    if (hlBeat != null) score.highlightBeat(hlBeat);
     if (s.chord) bigName.textContent = prettyNote(s.chord.name);
     caption.textContent = s.kind === 'chord' ? describeStep(s)
       : s.kind === 'pass' ? `Nota de paso: ${noteName(s.notes[s.notes.length - 1].midi)} (de la escala)`

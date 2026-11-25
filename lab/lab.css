@@ -397,6 +397,9 @@ details.syntax pre { font-family: var(--font-mono); font-size: 0.82rem; white-sp
   .score-scroll { max-height: none; overflow: visible; border: 0; }
 }
 
+.at-host .at-note-marks { position: absolute; inset: 0 auto auto 0; z-index: 15; pointer-events: none; }
+.at-host .at-note-mark { position: absolute; border: 2.5px solid #df812f; border-radius: 999px; background: rgba(223, 129, 47, 0.16); box-shadow: 0 0 6px rgba(223, 129, 47, 0.55); animation: at-note-in .18s ease-out; }
+@keyframes at-note-in { from { transform: scale(1.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .at-host .at-follow { position: absolute; z-index: 15; pointer-events: none; background: rgba(223, 129, 47, 0.28); border-left: 3px solid rgba(223, 129, 47, 0.95); border-radius: 2px; transition: left 0.06s linear; }
 
 .site-copyright { text-align: center; padding: 18px 16px 26px; color: var(--ink-soft); }

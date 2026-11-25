@@ -37,6 +37,7 @@ export function createScore(host, o = {}) {
   wrap.append(surface);
   host.append(wrap);
   const follow = h('div', { class: 'at-follow', hidden: true });
+  const marks = h('div', { class: 'at-note-marks' });
 
   const state = {
     api: null,
@@ -69,6 +70,8 @@ export function createScore(host, o = {}) {
     core: {
       fontDirectory: new URL('font/', VENDOR).href,
       useWorkers: true,
+      // Medidas de cada nota (cabeza y número de tab) para poder resaltarlas.
+      includeNoteBounds: true,
     },
     display: {
       layoutMode: state.layout === 'horizontal' ? at.LayoutMode.Horizontal : at.LayoutMode.Page,
@@ -116,6 +119,7 @@ export function createScore(host, o = {}) {
     });
     api.postRenderFinished.on(() => {
       state.bounds = api.boundsLookup ?? null;
+      emit();
     });
     api.playerReady.on(() => {
       state.playerReady = true;
@@ -239,6 +243,37 @@ export function createScore(host, o = {}) {
     },
     hideFollow() {
       follow.hidden = true;
+      marks.replaceChildren();
+    },
+    /**
+     * Resalta las notas del beat n (cabezas en la partitura y números en la
+     * tab) sin barra de progreso. Devuelve false si aún no hay maquetación.
+     */
+    highlightBeat(n) {
+      marks.replaceChildren();
+      if (state.destroyed) return false;
+      const beat = state.beats[n];
+      const lookup = state.bounds;
+      if (!beat || !lookup) return false;
+      const all = lookup.findBeats?.(beat) ?? [lookup.findBeat(beat)].filter(Boolean);
+      if (!all.length) return false;
+      if (!marks.isConnected) surface.append(marks);
+      let first = null;
+      for (const b of all) {
+        const heads = (b.notes ?? []).map((nb) => nb.noteHeadBounds).filter(Boolean);
+        for (const r of heads.length ? heads : [b.visualBounds]) {
+          const pad = 3;
+          marks.append(h('div', { class: 'at-note-mark', style: `left:${r.x - pad}px;top:${r.y - pad}px;width:${r.w + pad * 2}px;height:${r.h + pad * 2}px` }));
+          if (!first || r.y < first.y) first = r;
+        }
+      }
+      const bar = all[0].barBounds?.visualBounds ?? all[0].visualBounds;
+      const top = Math.min(bar.y, first?.y ?? bar.y);
+      const bottom = Math.max(...all.map((b) => (b.barBounds?.visualBounds ?? b.visualBounds)).map((v) => v.y + v.h));
+      if (top < wrap.scrollTop || bottom > wrap.scrollTop + wrap.clientHeight) wrap.scrollTop = Math.max(0, top - 24);
+      const left = all[0].visualBounds.x;
+      if (left < wrap.scrollLeft || left > wrap.scrollLeft + wrap.clientWidth - 40) wrap.scrollLeft = Math.max(0, left - 80);
+      return true;
     },
     downloadMidi: () => withApi((api) => api.downloadMidi()),
     destroy() {
