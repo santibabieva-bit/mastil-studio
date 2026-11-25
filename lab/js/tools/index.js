@@ -33,6 +33,11 @@ import earplay from './earplay.js';
 import repertoire from './repertoire.js';
 import curriculum from './curriculum.js';
 import neckmap from './neckmap.js';
+import animneck from './animneck.js';
+import theorymotion from './theorymotion.js';
+import neckgames from './neckgames.js';
+import callresponse from './callresponse.js';
+import phrasestudio from './phrasestudio.js';
 
 export const GROUPS = [
   { id: 'neck', label: 'Aprender el mástil' },
@@ -43,9 +48,9 @@ export const GROUPS = [
 ];
 
 export const TOOLS = [
-  navigator, blind, neckmap, triads, quiz, chords,
+  navigator, animneck, theorymotion, neckgames, blind, neckmap, triads, quiz, chords,
   curriculum, routine, repertoire, drills, timing, exlib, exercises, audiolab, recorder, metronome, strum, rhythm, vibrato, log,
-  jam, backing, tab, score, licks, randomiser, capo,
+  jam, callresponse, phrasestudio, backing, tab, score, licks, randomiser, capo,
   ear, earplay, eq, bendlab, tuner,
   reference,
 ];

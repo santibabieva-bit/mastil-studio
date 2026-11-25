@@ -59,10 +59,13 @@ function esc(text) {
  * @param {boolean} [o.stringNames] mostrar nombres de cuerda a la izquierda
  * @param {string} [o.title] título accesible
  */
-export function renderFretboard(o) {
+/**
+ * Geometría del mástil (la misma que usa renderFretboard), para dibujar capas
+ * encima: centro de cada traste, altura de cada cuerda, radio de las notas…
+ */
+export function boardGeometry(o) {
   const {
-    tuning, from = 0, to = 15, notes = [], lefty = false, stringNames = true,
-    title = 'Mástil de guitarra', width = 1200, background = true, gap: gapOverride,
+    tuning, from = 0, to = 15, lefty = false, stringNames = true, width = 1200, gap: gapOverride,
   } = o;
   const strings = tuning.length;
   const gap = gapOverride ?? (strings > 6 ? 30 : 34);
@@ -75,17 +78,33 @@ export function renderFretboard(o) {
   const boardH = (strings - 1) * gap + pad * 2;
   const boardW = width - leftMargin - rightMargin;
   const height = top + boardH + 34;
-
   const lo = from > 0 ? from - 1 : 0;
   const span = wirePos(to) - wirePos(lo);
   const xWire = (n) => leftMargin + (boardW * (wirePos(n) - wirePos(lo))) / span;
   const mirror = (x) => (lefty ? width - x : x);
   const xCenter = (f) => (f === 0 ? leftMargin - gutter / 2 : (xWire(f - 1) + xWire(f)) / 2);
   const yString = (s) => top + pad + s * gap;
-
   let minFretW = Infinity;
   for (let f = Math.max(1, from); f <= to; f += 1) minFretW = Math.min(minFretW, xWire(f) - xWire(f - 1));
   const radius = Math.max(7, Math.min(14, gap * 0.4, minFretW * 0.46));
+  return {
+    strings, gap, showOpen, gutter, leftMargin, boardW, boardH, top, pad, width, height, lo, from, to,
+    xWire, mirror, xCenter, yString, radius,
+    /** Centro (x, y) de la nota en (s, f), ya reflejado si es zurdo. */
+    at: (s, f) => ({ x: mirror(xCenter(f)), y: yString(s) }),
+  };
+}
+
+export function renderFretboard(o) {
+  const {
+    tuning, notes = [], lefty = false, stringNames = true,
+    title = 'Mástil de guitarra', background = true,
+  } = o;
+  const g = boardGeometry(o);
+  const {
+    strings, gap, showOpen, gutter, leftMargin, top, boardH, boardW, width, height, lo, from, to,
+    xWire, mirror, xCenter, yString, radius,
+  } = g;
 
   const parts = [];
   parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${esc(title)}" font-family="Segoe UI, system-ui, Arial, sans-serif">`);

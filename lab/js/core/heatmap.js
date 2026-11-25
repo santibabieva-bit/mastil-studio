@@ -124,3 +124,21 @@ export function heatColor(m) {
   const hue = Math.round(m * 120); // 0 rojo … 120 verde
   return `hsl(${hue} 62% 58%)`;
 }
+
+/** Foto del dominio de cada punto (0–100) para el repaso de la evolución. */
+export function snapshot(map) {
+  const out = {};
+  for (const [k, c] of Object.entries(map ?? {})) {
+    const m = mastery(c);
+    if (m != null) out[k] = Math.round(m * 100);
+  }
+  return out;
+}
+
+/** Guarda la foto de hoy en el historial por días (máx. `keep` días). */
+export function recordDay(days, map, date, keep = 120) {
+  const next = { ...(days ?? {}), [date]: snapshot(map) };
+  const dates = Object.keys(next).sort();
+  for (const d of dates.slice(0, Math.max(0, dates.length - keep))) delete next[d];
+  return next;
+}

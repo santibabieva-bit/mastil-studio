@@ -169,7 +169,7 @@ function mount(root, ctx) {
 
   root.append(
     header('Oído y afinación', 'Toca lo que oyes', 'Oyes una melodía corta y la encuentras en el mástil de oído, sin tab ni diagrama. Es el ejercicio que conecta el oído con la mano izquierda: lo que oyes por dentro, lo tocas.'),
-    h('div', { class: 'tool-grid' },
+    h('div', { class: 'tool-grid tool-grid--rev' },
       h('section', { class: 'panel stack' },
         h('div', { class: 'grid-2' },
           h('div', { class: 'field' }, h('label', {}, 'Nivel'), select(EARPLAY_LEVELS.map((l) => ({ value: l.id, label: l.label })), cfg.level, (v) => { cfg.level = Number(v); ctx.storage.set('earplay-level', cfg.level); drawStats(); })),

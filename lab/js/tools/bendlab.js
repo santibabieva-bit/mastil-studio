@@ -16,6 +16,7 @@ import {
   button, clear, h, segmented, select, slider,
 } from '../ui/dom.js';
 import { header } from './common.js';
+import { COLORS, createAnimBoard } from '../ui/animboard.js';
 
 const STRINGS = ['1.ª (Mi agudo)', '2.ª (Si)', '3.ª (Sol)', '4.ª (Re)'];
 
@@ -43,6 +44,40 @@ function mount(root, ctx) {
   });
 
   const startMidi = () => tuning[cfg.string] + cfg.fret;
+  const bendBox = h('div', { class: 'stack' });
+  let bendBoard = null;
+  let bendAnim = 0;
+
+  /** Mástil con la cuerda que se dobla: la nota objetivo en fantasma. */
+  function drawBendBoard() {
+    clear(bendBox);
+    cancelAnimationFrame(bendAnim);
+    if (cfg.tab !== 'bend') { bendBoard = null; return; }
+    bendBoard = createAnimBoard({ tuning, from: Math.max(1, cfg.fret - 3), to: Math.min(17, cfg.fret + 3), title: 'Bend' });
+    bendBoard.bend(cfg.string, cfg.fret, def().prebend ? def().semitones : 0, { target: def().semitones, label: prettyNote(midiName(startMidi())).replace(/-?\d+$/, '') });
+    bendBox.append(bendBoard.el, h('div', { class: 'row', style: 'justify-content:center' }, button('▶ Ver y oír el bend', { variant: 'outline', onClick: demoBend })));
+  }
+
+  /** Animación de referencia: sube (o baja, si es pre-bend), aguanta y suelta. */
+  async function demoBend() {
+    if (!bendBoard) return;
+    await engine.ensure();
+    const semis = def().semitones;
+    const pre = !!def().prebend;
+    const from = pre ? semis : 0;
+    const to = pre ? 0 : semis;
+    // El sintetizador sube (o baja) la altura de verdad mientras la cuerda se dobla.
+    engine.pluck(pre ? targetMidi() : startMidi(), engine.time + 0.02, { dur: 1.8, vel: 0.85, bend: pre ? -semis : semis });
+    const t0 = performance.now();
+    const step = () => {
+      const k = Math.min(1, (performance.now() - t0) / 270);
+      const ease = 1 - (1 - k) ** 3;
+      const v = from + (to - from) * ease;
+      bendBoard.bend(cfg.string, cfg.fret, v, { target: semis, label: `${v.toFixed(1)}`, color: k >= 1 ? COLORS.ok : COLORS.accent });
+      if (k < 1) bendAnim = requestAnimationFrame(step);
+    };
+    step();
+  }
   const def = () => BEND_TARGETS.find((t) => t.id === cfg.target) ?? BEND_TARGETS[1];
   const targetMidi = () => startMidi() + def().semitones;
 
@@ -69,6 +104,8 @@ function mount(root, ctx) {
         if (freq && cfg.tab === 'bend') {
           const c = Math.round(centsBetween(freq, midiToFreq(targetMidi())));
           live.textContent = `${c > 0 ? '+' : ''}${c} cents del objetivo`;
+          const semis = Math.max(0, 12 * Math.log2(freq / midiToFreq(startMidi())));
+          bendBoard?.bend(cfg.string, cfg.fret, semis, { target: def().semitones, label: semis.toFixed(1), color: Math.abs(c) <= 15 ? COLORS.ok : COLORS.accent });
         }
         if (t >= seconds) { clearInterval(timer); resolve(); }
       }, 22);
@@ -183,6 +220,7 @@ function mount(root, ctx) {
     ];
     const names = h('p', { class: 'hint', style: 'text-align:center' }, '');
     function refreshNames() {
+      drawBendBoard();
       names.textContent = cfg.tab === 'bend'
         ? `Parte de ${prettyNote(midiName(startMidi()))} y sube a ${prettyNote(midiName(targetMidi()))}${def().prebend ? ' (pre-bend: dobla antes de picar y suelta)' : ''}.`
         : `Sostén ${prettyNote(midiName(startMidi()))} con vibrato durante unos segundos.`;
@@ -196,6 +234,7 @@ function mount(root, ctx) {
       h('section', { class: 'panel stack' },
         ...common,
         ...bendOpts,
+        bendBox,
         names,
         h('div', { class: 'row', style: 'justify-content:center' },
           button('🔊 Oír nota de salida', { variant: 'outline', onClick: () => playRef(startMidi()) }),

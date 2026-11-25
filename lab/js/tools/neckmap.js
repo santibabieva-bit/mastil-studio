@@ -4,7 +4,7 @@
  */
 
 import {
-  STANDARD_MIDI, coverage, heatColor, mapGrid, pickSpots, recordSpot, stringSummary, weakestSpots,
+  STANDARD_MIDI, coverage, heatColor, mapGrid, pickSpots, recordDay, recordSpot, stringSummary, weakestSpots,
 } from '../core/heatmap.js';
 import { midiName, pcName, prettyNote } from '../core/music.js';
 import { stringName } from '../core/quiz.js';
@@ -18,8 +18,9 @@ const NOTE_BUTTONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 /** Registra un punto en el mapa guardado. Lo usan el Quiz y el Mástil a ciegas. */
 export function logSpot(ctx, s, f, ok, ms = null) {
-  const map = ctx.storage.get('neck-map', {});
-  ctx.storage.set('neck-map', recordSpot(map, s, f, ok, ms));
+  const map = recordSpot(ctx.storage.get('neck-map', {}), s, f, ok, ms);
+  ctx.storage.set('neck-map', map);
+  ctx.storage.set('neck-map-days', recordDay(ctx.storage.get('neck-map-days', {}), map, new Date().toISOString().slice(0, 10)));
 }
 
 function mount(root, ctx) {
@@ -48,6 +49,8 @@ function mount(root, ctx) {
           : `${stringName(s)}, traste ${f}: sin datos`;
         wrap.append(h('span', {
           title: tip,
+          class: 'neck-cell',
+          dataset: { k: `${s}:${f}` },
           style: `background:${col ?? 'var(--line,#e5dfd2)'};opacity:${col ? 1 : 0.45};border-radius:4px;min-height:26px;display:flex;align-items:center;justify-content:center;color:#222`,
         }, prettyNote(pcName(c.pc, 'sharp'))));
       }
@@ -136,21 +139,50 @@ function mount(root, ctx) {
     );
   }
 
+  /** Repaso de la evolución: el mapa se recolorea día a día. */
+  let replayTimer = 0;
+  function replay() {
+    clearInterval(replayTimer);
+    const days = ctx.storage.get('neck-map-days', {});
+    const dates = Object.keys(days).sort();
+    if (!dates.length) { replayDay.textContent = 'Aún no hay días guardados: practica y vuelve mañana.'; return; }
+    let i = 0;
+    const cells = [...gridEl.querySelectorAll('.neck-cell')];
+    const paintDay = () => {
+      const snap = days[dates[i]];
+      for (const c of cells) {
+        const v = snap[c.dataset.k];
+        c.style.background = v == null ? 'var(--line,#e5dfd2)' : heatColor(v / 100);
+        c.style.opacity = v == null ? '0.45' : '1';
+      }
+      const solid = Object.values(snap).filter((v) => v >= 85).length;
+      replayDay.textContent = `${new Date(`${dates[i]}T12:00:00`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} · ${solid} puntos dominados`;
+      i += 1;
+      if (i >= dates.length) { clearInterval(replayTimer); setTimeout(() => { drawGrid(); replayDay.textContent += ' · hoy'; }, 1200); }
+    };
+    paintDay();
+    replayTimer = setInterval(paintDay, Math.max(350, Math.min(900, 9000 / dates.length)));
+  }
+  const replayDay = h('div', { class: 'replay-day' }, '');
+  ctx.onCleanup(() => clearInterval(replayTimer));
+
   function reset() {
     if (!confirm('¿Borrar todo el mapa de tu mástil?')) return;
     ctx.storage.set('neck-map', {});
+    ctx.storage.set('neck-map-days', {});
     drawGrid();
     drawSide();
   }
 
   root.append(
     header('Aprender el mástil', 'Mapa de mi mástil', 'Cada nota que respondes en el Theory Trainer, el Mástil a ciegas o aquí se apunta por cuerda y traste. Verde: lo dominas. Rojo: fallas o tardas. Gris: aún no lo has visto. La práctica insiste donde estás más flojo, con repetición espaciada.'),
-    h('div', { class: 'tool-grid' },
+    h('div', { class: 'tool-grid tool-grid--rev' },
       h('section', { class: 'panel stack' },
         gridEl,
         slider({ min: 5, max: 15, value: cfg.maxFret, label: 'Traste máximo', format: (v) => `${v}`, onInput: (v) => { cfg.maxFret = v; ctx.storage.set('neckmap-fret', v); drawGrid(); drawSide(); } }),
+        replayDay,
         stage,
-        h('div', { class: 'row' }, button(`Practicar mis zonas débiles (${ROUND})`, { variant: 'accent', onClick: start }), button('Borrar mapa', { variant: 'ghost', onClick: reset })),
+        h('div', { class: 'row' }, button('▶ Ver mi evolución', { variant: 'outline', onClick: replay }), button(`Practicar mis zonas débiles (${ROUND})`, { variant: 'accent', onClick: start }), button('Borrar mapa', { variant: 'ghost', onClick: reset })),
       ),
       h('section', { class: 'panel stack' }, sideEl),
     ),

@@ -86,7 +86,7 @@ function mount(root, ctx) {
 
   root.append(
     header('Practicar', 'Repertorio', 'Las canciones son el mejor termómetro: si la tocas entera, a tempo y de memoria, lo que has practicado funciona. Aprende por secciones, sube el tempo poco a poco y repasa con repetición espaciada.'),
-    h('div', { class: 'tool-grid' },
+    h('div', { class: 'tool-grid tool-grid--rev' },
       h('div', { class: 'stack' }, top, list),
       h('section', { class: 'panel stack' }, h('h2', {}, 'Añadir canción'),
         input('Título', 'title', { placeholder: 'p. ej. Wonderwall' }),

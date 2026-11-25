@@ -405,3 +405,41 @@ details.syntax pre { font-family: var(--font-mono); font-size: 0.82rem; white-sp
 .inst-chip { border: 2px solid var(--line); background: #fffdf8; color: var(--ink-soft); border-radius: 999px; padding: 7px 14px; font: inherit; font-weight: 700; cursor: pointer; }
 .inst-chip[aria-pressed="true"] { border-color: var(--orange); background: var(--orange-pale); color: var(--orange-dark); }
 .inst-chip:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+/* ───────────── Diapasón animado ───────────── */
+.anim-board .ab-dot { transition: transform .32s cubic-bezier(.3,.7,.3,1), opacity .3s ease; }
+.anim-board .ab-dot.is-entering { opacity: 0 !important; }
+.anim-board .ab-dot.is-leaving { opacity: 0 !important; }
+.anim-board .ab-dot circle { transition: fill .25s, r .2s; }
+.anim-board .ab-hand { transition: transform .4s cubic-bezier(.3,.7,.3,1), width .4s cubic-bezier(.3,.7,.3,1); }
+.anim-board [data-layer="hand"] { transition: opacity .3s; }
+.anim-board [data-layer="hand"] text { transition: transform .4s cubic-bezier(.3,.7,.3,1); }
+.anim-board .ab-zone { transition: fill-opacity .3s; }
+.anim-board .ab-pulse { animation: ab-pulse .7s ease-out forwards; transform-box: fill-box; }
+@keyframes ab-pulse { from { opacity: .9; stroke-width: 4; } to { opacity: 0; stroke-width: 1; r: 30; } }
+.anim-board.is-drawing { cursor: crosshair; touch-action: none; }
+.anim-board.is-clickable svg [data-hit] { cursor: pointer; }
+.anim-board.is-clickable svg [data-hit]:hover { fill: rgba(223,129,47,.12); }
+.anim-caption { text-align: center; font-weight: 700; min-height: 1.4em; font-size: 1.05rem; }
+.anim-chord { font-family: var(--font-display, Georgia, serif); font-size: 2rem; text-align: center; min-height: 1.3em; transition: color .3s; }
+.anim-legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: .85rem; }
+.anim-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+.anim-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+.anim-compare { display: grid; gap: 10px; }
+.pick-view { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.pick-view .pick { transform-box: view-box; }
+.pick-view .pick.pick-down { animation: pick-down .28s ease-in-out forwards; }
+.pick-view .pick.pick-up { animation: pick-up .28s ease-in-out forwards; }
+@keyframes pick-down { from { transform: translateY(-4px); } to { transform: translateY(26px); } }
+@keyframes pick-up { from { transform: translateY(26px); } to { transform: translateY(-4px); } }
+.pick-text { font-weight: 600; min-width: 220px; }
+.rain-lane { position: relative; height: 150px; border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; background: linear-gradient(#fffdf8, #f6efe1); }
+.rain-drop { position: absolute; top: -40px; font-weight: 800; font-size: 1.6rem; padding: 2px 12px; border-radius: 999px; background: #2b2a26; color: #fff; animation-name: rain-fall; animation-timing-function: linear; animation-fill-mode: forwards; }
+.rain-drop.is-hit { background: #2f8a57; animation-play-state: paused; transition: opacity .3s; opacity: 0; }
+@keyframes rain-fall { to { top: 150px; } }
+.replay-day { font-weight: 800; text-align: center; min-height: 1.3em; }
+.neck-cell { transition: background-color .45s ease, opacity .45s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .anim-board .ab-dot, .anim-board .ab-hand, .anim-board [data-layer="hand"] text, .neck-cell { transition: none; }
+  .anim-board .ab-pulse, .pick-view .pick { animation: none; }
+}
