@@ -259,13 +259,17 @@ export function createScore(host, o = {}) {
       if (!all.length) return false;
       if (!marks.isConnected) surface.append(marks);
       let first = null;
+      // Un área sombreada por pentagrama que envuelve todas las notas del beat.
       for (const b of all) {
         const heads = (b.notes ?? []).map((nb) => nb.noteHeadBounds).filter(Boolean);
-        for (const r of heads.length ? heads : [b.visualBounds]) {
-          const pad = 3;
-          marks.append(h('div', { class: 'at-note-mark', style: `left:${r.x - pad}px;top:${r.y - pad}px;width:${r.w + pad * 2}px;height:${r.h + pad * 2}px` }));
-          if (!first || r.y < first.y) first = r;
-        }
+        const rs = heads.length ? heads : [b.visualBounds];
+        const x0 = Math.min(...rs.map((r) => r.x));
+        const y0 = Math.min(...rs.map((r) => r.y));
+        const x1 = Math.max(...rs.map((r) => r.x + r.w));
+        const y1 = Math.max(...rs.map((r) => r.y + r.h));
+        const pad = 6;
+        marks.append(h('div', { class: 'at-note-mark', style: `left:${x0 - pad}px;top:${y0 - pad}px;width:${x1 - x0 + pad * 2}px;height:${y1 - y0 + pad * 2}px` }));
+        if (!first || y0 < first.y) first = { y: y0 };
       }
       const bar = all[0].barBounds?.visualBounds ?? all[0].visualBounds;
       const top = Math.min(bar.y, first?.y ?? bar.y);
