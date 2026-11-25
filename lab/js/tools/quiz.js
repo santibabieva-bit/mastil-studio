@@ -4,7 +4,8 @@ import {
   LEVELS, QUIZ_TOPICS, checkAnswer, describeStatKey, emptyStats, makeQuestion, recordAnswer, weakSpots,
 } from '../core/quiz.js';
 import { getTuning, midiName, prettyNote } from '../core/music.js';
-import { hitFromEvent, renderFretboard } from '../ui/fretboard.js';
+import { hitFromEvent } from '../ui/fretboard.js';
+import { createLiveBoard } from '../ui/liveboard.js';
 import { button, clear, h, segmented } from '../ui/dom.js';
 import { dueCount } from '../core/srs.js';
 import { header } from './common.js';
@@ -121,6 +122,11 @@ function mount(root, ctx) {
   }
 
   /* ─── Pregunta ─── */
+  /** Pinta el mástil animado de la pregunta (la respuesta aparece con transición). */
+  function paint(wrap, opts) {
+    (wrap.__live ?? createLiveBoard(wrap, { morph: false })).render(opts);
+  }
+
   function boardFor(question, reveal = null, picked = null) {
     const maxFret = Math.max(5, LEVELS[cfg.level].maxFret);
     const notes = [];
@@ -133,7 +139,7 @@ function mount(root, ctx) {
       if (reveal) notes.push({ s: question.answer.s, f: question.answer.f, kind: 'select', label: reveal });
       if (picked && (picked.s !== question.answer.s || picked.f !== question.answer.f)) notes.push({ s: picked.s, f: picked.f, kind: 'hidden', label: '✕' });
     }
-    return renderFretboard({ tuning, from: 0, to: question.type === 'findNote' ? 11 : maxFret, notes, title: question.prompt });
+    return { tuning, from: 0, to: question.type === 'findNote' ? 11 : maxFret, notes, title: question.prompt };
   }
 
   function renderQuestion() {
@@ -156,7 +162,8 @@ function mount(root, ctx) {
       h('div', { class: 'quiz-prompt' }, q.prompt),
     );
     if (q.board || q.kind === 'fret') {
-      const wrap = h('div', { class: 'fb-wrap is-quiz', html: boardFor(q) });
+      const wrap = h('div', { class: 'fb-wrap is-quiz' });
+      paint(wrap, boardFor(q));
       if (q.kind === 'fret') {
         wrap.addEventListener('click', (e) => {
           if (run.locked) return;
@@ -207,11 +214,11 @@ function mount(root, ctx) {
       if (!ok && btn) btn.classList.add('is-wrong');
       if (q.type === 'fretNote') {
         const label = prettyNote(midiName(tuning[q.board.s] + q.board.f)).replace(/\d+$/, '');
-        stage.querySelector('.fb-wrap').innerHTML = boardFor(q, label);
+        paint(stage.querySelector('.fb-wrap'), boardFor(q, label));
       }
     } else if (wrap) {
       const midi = tuning[q.answer.s] + q.answer.f;
-      wrap.innerHTML = boardFor(q, prettyNote(midiName(midi)).replace(/\d+$/, ''), given);
+      paint(wrap, boardFor(q, prettyNote(midiName(midi)).replace(/\d+$/, ''), given));
     }
     if (ok) {
       try {

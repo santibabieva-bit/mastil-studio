@@ -12,7 +12,7 @@ import {
   INVERSION_LABELS, arpeggioPositions, overlayChords, parentScale, positionLabel, stringSetLabel, stringSets, voiceLeadPath, voicingsByInversion,
 } from '../core/triads.js';
 import { buildDiagram } from '../../../src/diagram.js';
-import { renderFretboard } from '../ui/fretboard.js';
+import { createLiveBoard } from '../ui/liveboard.js';
 import { saveBlob, slug, svgToPngBlob } from '../ui/export.js';
 import { button, clear, h, segmented, select, toggle } from '../ui/dom.js';
 import { header, rootChoices } from './common.js';
@@ -37,12 +37,12 @@ function noteSet(voicing, tones, tuning = STD) {
   });
 }
 
-function miniBoard(voicing, tones, title) {
+function miniBoardOpts(voicing, tones, title) {
   const frets = voicing.notes.map((n) => n.f).filter((f) => f > 0);
   const lo = frets.length ? Math.max(1, Math.min(...frets) - 1) : 1;
   const hi = Math.max(lo + 4, frets.length ? Math.max(...frets) + 1 : 4);
   const from = lo <= 1 ? 0 : lo;
-  return renderFretboard({ tuning: STD, from, to: hi, notes: noteSet(voicing, tones), width: 420, stringNames: false, title });
+  return { tuning: STD, from, to: hi, notes: noteSet(voicing, tones), width: 420, stringNames: false, title };
 }
 
 function mount(root, ctx) {
@@ -62,6 +62,16 @@ function mount(root, ctx) {
     posIndex: 0,
   };
   const out = h('div', { class: 'stack' });
+  // Mástiles persistentes por vista: al cambiar de acorde o de juego de cuerdas
+  // el mismo diagrama se transforma (las notas se deslizan) en vez de redibujarse.
+  const keep = new Map();
+  let cardSeq = 0;
+  function live(id, opts, attrs = { class: 'fretboard-wrap', style: 'overflow-x:auto' }) {
+    let el = keep.get(id);
+    if (!el) { el = h('div', attrs); createLiveBoard(el); keep.set(id, el); }
+    el.__live.render(opts);
+    return el;
+  }
   const rootPc = () => resolveProgression(state.root, [{ s: 0, t: 'maj' }])[0].rootPc;
   const notes = () => (CHORD_TYPES[state.type].intervals.length);
 
@@ -82,7 +92,7 @@ function mount(root, ctx) {
 
   function voicingCard(v, tones, title, extra = null) {
     const card = h('button', { type: 'button', class: 'voicing-card', title: 'Oír este voicing' },
-      h('div', { html: miniBoard(v, tones, title) }),
+      live(`card-${state.view}-${cardSeq++}`, miniBoardOpts(v, tones, title), {}),
       h('div', { class: 'hint' }, title),
       extra,
     );
@@ -122,7 +132,7 @@ function mount(root, ctx) {
     }
     box.append(
       h('p', { class: 'hint' }, `El acorde ${prettyNote(pcName(rootPc(), 'sharp'))} ${CHORD_TYPES[state.type].name} sobre su escala madre (${prettyNote(pcName(rootPc(), 'sharp'))} ${parent.quality}): las notas llenas son el acorde y los círculos huecos, el resto de la escala.`),
-      h('div', { class: 'fretboard-wrap', style: 'overflow-x:auto', html: renderFretboard({ tuning: STD, from: 0, to: 15, notes: boardNotes, width: 1200, title: 'Acorde sobre la escala' }) }),
+      live('scale', { tuning: STD, from: 0, to: 15, notes: boardNotes, width: 1200, title: 'Acorde sobre la escala' }),
       legend(),
     );
   }
@@ -138,7 +148,7 @@ function mount(root, ctx) {
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Posición'),
         segmented(positions.map((q, i) => ({ value: i, label: `${i + 1}`, title: positionLabel(q, rootPc(), STD) })), state.posIndex, (v) => { state.posIndex = Number(v); draw(); })),
       h('p', { class: 'hint' }, `${positionLabel(pos, rootPc(), STD)} · trastes ${pos.from}–${pos.to}. Los números dentro de las notas son los dedos (1 índice … 4 meñique; 0 = al aire).`),
-      h('div', { class: 'fretboard-wrap', style: 'overflow-x:auto', html: renderFretboard({ tuning: STD, from: Math.max(0, pos.from - 1), to: Math.min(15, pos.to + 1), notes: boardNotes, width: 1000, title: 'Arpegio por posición' }) }),
+      live('arp', { tuning: STD, from: Math.max(0, pos.from - 1), to: Math.min(15, pos.to + 1), notes: boardNotes, width: 1000, title: 'Arpegio por posición' }),
       h('div', { class: 'row' }, button('▶ Oír el arpegio', { variant: 'accent', onClick: async () => {
         await engine.ensure();
         const sorted = [...pos.notes].sort((a, b) => a.midi - b.midi);
@@ -205,7 +215,7 @@ function mount(root, ctx) {
         h('div', { class: 'field' }, h('label', {}, 'Calidad'), select(TYPE_CHOICES, state.otherType, (v) => { state.otherType = v; refresh(); draw(); })),
       ),
       h('p', { class: 'hint' }, `Acorde 1 (negro, con colores): ${prettyNote(pcName(a.rootPc, 'sharp'))} ${CHORD_TYPES[a.typeId].name}. Acorde 2 (naranja, hueco): ${prettyNote(pcName(b.rootPc, 'sharp'))} ${CHORD_TYPES[b.typeId].name}. Las notas compartidas se rellenan en naranja: ${o.shared.length ? o.shared.map((pc) => prettyNote(pcName(pc, 'sharp'))).join(', ') : 'ninguna'}.`),
-      h('div', { class: 'fretboard-wrap', style: 'overflow-x:auto', html: renderFretboard({ tuning: STD, from: 0, to: 15, notes: boardNotes, width: 1200, title: 'Dos acordes superpuestos' }) }),
+      live('overlay', { tuning: STD, from: 0, to: 15, notes: boardNotes, width: 1200, title: 'Dos acordes superpuestos' }),
       h('p', { class: 'hint' }, 'Útil para ver cómo una tríada «vive» dentro de un acorde de séptima (por ejemplo, F sobre Dm7) o qué notas conectan dos acordes.'),
     );
   }
@@ -246,6 +256,7 @@ function mount(root, ctx) {
   const RENDER = { inv: viewInversions, scale: viewScale, arp: viewArp, lead: viewLead, overlay: viewOverlay, caged: viewCaged };
 
   function draw() {
+    cardSeq = 0;
     clear(out);
     refresh();
     const box = h('div', { class: 'stack' });

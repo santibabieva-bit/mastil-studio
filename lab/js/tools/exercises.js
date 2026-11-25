@@ -9,7 +9,8 @@ import { beatsToAlphaTex, durationForSub } from '../core/alphatex.js';
 import { createScore, scoreToolbar } from '../ui/score.js';
 import { coerce } from '../core/state.js';
 import { Transport } from '../audio/transport.js';
-import { clearPlaying, renderFretboard, setPlaying, hitFromEvent, flashNote } from '../ui/fretboard.js';
+import { clearPlaying, setPlaying, hitFromEvent, flashNote } from '../ui/fretboard.js';
+import { createLiveBoard } from '../ui/liveboard.js';
 import { button, clear, copyText, h, segmented, select, slider, toggle } from '../ui/dom.js';
 import { header, playToggle, safeCollection, scalePicker } from './common.js';
 
@@ -52,6 +53,7 @@ function mount(root, ctx) {
   let tuningMidi = getTuning(state.tuning).midi;
 
   const board = h('div', { class: 'fb-wrap' });
+  const live = createLiveBoard(board);
   const tabBox = h('div', { id: 'tab-out', 'aria-label': 'Tablatura del ejercicio (alphaTab)' });
   const score = createScore(tabBox, { stave: 'tab', cursor: false });
   ctx.onCleanup(() => score.destroy());
@@ -141,7 +143,7 @@ function mount(root, ctx) {
     const notes = roles
       .filter((n) => set.has(`${n.s}-${n.f}`))
       .map((n) => ({ s: n.s, f: n.f, label: n.name, role: n.isRoot ? 'root' : null }));
-    board.innerHTML = renderFretboard({ tuning: tuningMidi, from, to: Math.max(hi, from + 5), notes, title: `${collection.title} – posición` });
+    live.render({ tuning: tuningMidi, from, to: Math.max(hi, from + 5), notes, title: `${collection.title} – posición` });
     drawTab();
     meta.textContent = `${collection.title} · ${sequence.length} notas${partial ? ' · posición parcial (no cabe en el mástil)' : ''}`;
     ctx.setParams({

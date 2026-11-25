@@ -33,10 +33,11 @@ export const noteName = (midi) => prettyNote(midiName(midi)).replace(/-?\d+$/, '
  * @param {object} o { tuning, from, to, title }
  * @returns board API
  */
-export function createAnimBoard({ tuning, from = 0, to = 12, title = 'Mástil animado' }) {
-  const geo = boardGeometry({ tuning, from, to });
+export function createAnimBoard({ tuning, from = 0, to = 12, title = 'Mástil animado', ...rest }) {
+  // rest: lefty, stringNames, width… (los mismos que renderFretboard).
+  const geo = boardGeometry({ tuning, from, to, ...rest });
   const wrap = h('div', { class: 'fb-wrap anim-board' });
-  wrap.innerHTML = renderFretboard({ tuning, from, to, notes: [], title });
+  wrap.innerHTML = renderFretboard({ tuning, from, to, notes: [], title, ...rest });
   const svg = wrap.querySelector('svg');
   const layer = {};
   for (const name of LAYERS) {
@@ -61,7 +62,7 @@ export function createAnimBoard({ tuning, from = 0, to = 12, title = 'Mástil an
     const rad = r * (item.scale ?? 1);
     if (!g) {
       g = el('g', { class: item.instant ? 'ab-dot' : 'ab-dot is-entering' });
-      g.append(el('circle', { r: rad }), el('text', { 'text-anchor': 'middle', 'font-weight': '700' }));
+      g.append(el('circle', { r: rad, class: 'ab-halo', fill: 'none' }), el('g', { class: 'ab-pie' }), el('circle', { r: rad, class: 'note-dot' }), el('text', { 'text-anchor': 'middle', 'font-weight': '700' }));
       place(g, x, y);
       layer[layerName].append(g);
       map.set(key, g);
@@ -70,9 +71,23 @@ export function createAnimBoard({ tuning, from = 0, to = 12, title = 'Mástil an
       g.classList.remove('is-leaving');
       place(g, x, y);
     }
-    const [circle, text] = g.children;
+    const [halo, pieG, circle, text] = g.children;
     circle.setAttribute('r', rad);
-    circle.setAttribute('fill', item.fill ?? COLORS.note);
+    // Varios colores (zonas CAGED solapadas): un sector por color bajo el aro.
+    const pieColors = Array.isArray(item.colors) && item.colors.length > 1 ? item.colors : null;
+    pieG.replaceChildren(...(pieColors ? pieColors.map((color, i, arr) => {
+      const a0 = -Math.PI / 2 + (i * 2 * Math.PI) / arr.length;
+      const a1 = -Math.PI / 2 + ((i + 1) * 2 * Math.PI) / arr.length;
+      const pt = (a) => `${(rad * Math.cos(a)).toFixed(2)} ${(rad * Math.sin(a)).toFixed(2)}`;
+      return el('path', { d: `M0 0 L${pt(a0)} A${rad} ${rad} 0 0 1 ${pt(a1)} Z`, fill: color });
+    }) : []));
+    if (item.halo) {
+      halo.setAttribute('r', rad + 3.4);
+      halo.setAttribute('stroke', item.halo);
+      halo.setAttribute('stroke-opacity', '.25');
+      halo.setAttribute('stroke-width', 2);
+    } else halo.setAttribute('stroke', 'none');
+    circle.setAttribute('fill', pieColors ? 'none' : (item.fill ?? COLORS.note));
     circle.setAttribute('stroke', item.stroke ?? '#fffdf8');
     circle.setAttribute('stroke-width', item.strokeWidth ?? 2);
     circle.setAttribute('stroke-dasharray', item.dashed ? '4 3' : 'none');
@@ -85,6 +100,7 @@ export function createAnimBoard({ tuning, from = 0, to = 12, title = 'Mástil an
     g.style.opacity = String(item.alpha ?? 1);
     g.dataset.s = item.s;
     g.dataset.f = item.f;
+    g.dataset.pos = `${item.s}-${item.f}`;
     return g;
   }
 
@@ -184,6 +200,8 @@ export function createAnimBoard({ tuning, from = 0, to = 12, title = 'Mástil an
     },
 
     clearArrows() { keyed.arrows.clear(); layer.arrows.replaceChildren(); },
+
+    setTitle(text) { if (text) svg.setAttribute('aria-label', text); },
 
     /** Recuadro de la mano sobre los trastes win.from … win.to (null lo oculta). */
     hand(win, { label = null } = {}) {
@@ -390,14 +408,21 @@ export function createPlayer(board, engine, { onStep = null, onEnd = null } = {}
         for (const n of steps[k].notes) items.push({ key: `t-${n.s}-${n.f}`, s: n.s, f: n.f, label: labelOf(n, k), fill: '#8a8272', alpha: Math.max(0.15, 0.7 - age * 0.1), scale: 0.85 });
       }
     }
+    const here = new Set(st.notes.map((n) => `${n.s}-${n.f}`));
     if (opts.next && steps[i + 1] && !masked(i + 1)) {
-      for (const n of steps[i + 1].notes) items.push({ key: `t-${n.s}-${n.f}`, s: n.s, f: n.f, label: labelOf(n, i + 1), fill: '#fffdf8', stroke: COLORS.accent, text: COLORS.accent, dashed: true, alpha: 0.95 });
+      for (const n of steps[i + 1].notes) {
+        // Con claves por voz, la forma siguiente no tapa las notas que siguen sonando.
+        if (opts.keyOf && here.has(`${n.s}-${n.f}`)) continue;
+        items.push({ key: `${opts.keyOf ? 'n' : 't'}-${n.s}-${n.f}`, s: n.s, f: n.f, label: labelOf(n, i + 1), fill: '#fffdf8', stroke: COLORS.accent, text: COLORS.accent, dashed: true, alpha: opts.keyOf ? 0.6 : 0.95 });
+      }
     }
     if (!masked(i)) {
-      for (const n of st.notes) {
+      st.notes.forEach((n, j) => {
         const color = opts.colorOf?.(n, i) ?? COLORS.accent;
-        items.push({ key: `t-${n.s}-${n.f}`, s: n.s, f: n.f, label: labelOf(n, i), fill: color, stroke: '#fffdf8', strokeWidth: 3, scale: 1.12, instant: true });
-      }
+        // keyOf: la misma voz conserva su punto y se desliza de un acorde al siguiente.
+        const key = opts.keyOf?.(n, j, i) ?? `t-${n.s}-${n.f}`;
+        items.push({ key, s: n.s, f: n.f, label: labelOf(n, i), fill: color, stroke: '#fffdf8', strokeWidth: 3, scale: 1.12, instant: !opts.keyOf });
+      });
     }
     // Una misma posición puede salir en varias capas: gana la última (nota actual).
     const byKey = new Map(items.map((it) => [it.key, it]));
@@ -437,11 +462,15 @@ export function createPlayer(board, engine, { onStep = null, onEnd = null } = {}
       const st = steps[i];
       const t = nextTime;
       if (st.strum && !opts.mute) engine.strum(st.strum, t, { dur: (st.d ?? 1) * spb * 0.95, vel: 0.55 });
-      if (st.pad && !opts.mute) engine.pad(st.pad, t, (st.d ?? 1) * spb, 0.3);
-      for (const n of (st.silent || opts.mute ? [] : st.notes)) {
+      if (st.pad && !opts.mute) engine.pad(st.pad, t, (st.padBeats ?? st.d ?? 1) * spb, 0.3);
+      if (st.bass != null && !opts.mute) engine.bass(st.bass, t, (st.d ?? 1) * spb * 0.9, 0.7);
+      const sounding = st.silent || opts.mute ? [] : st.notes.filter((n) => !n.held);
+      // arp: las notas del acorde se reparten dentro del paso (de grave a aguda).
+      const gap = st.arp && sounding.length > 1 ? ((st.d ?? 1) * spb) / sounding.length : 0;
+      sounding.forEach((n, k) => {
         const midi = n.midi ?? board.tuning[n.s] + n.f;
-        engine.pluck(midi, t, { dur: Math.max(0.25, (st.d ?? 1) * spb * 1.3), vel: n.art === 'H' || n.art === 'P' ? 0.6 : 0.82, legato: n.art === 'H' || n.art === 'P' || n.art === 'S' });
-      }
+        engine.pluck(midi, t + k * gap, { dur: Math.max(0.25, (st.d ?? 1) * spb * 1.3 - k * gap), vel: n.art === 'H' || n.art === 'P' ? 0.6 : (n.vel ?? 0.82), legato: n.art === 'H' || n.art === 'P' || n.art === 'S' });
+      });
       if (opts.click) engine.click(t, { accent: Math.abs(times[i] % 4) < 1e-6, sound: 'click', vol: 0.45 });
       engine.at(t, () => render(i));
       nextTime += (st.d ?? 1) * spb;
@@ -504,7 +533,7 @@ export function createPlayer(board, engine, { onStep = null, onEnd = null } = {}
       if (sound) {
         await engine.ensure();
         if (steps[k].strum) engine.strum(steps[k].strum, engine.time + 0.02, { dur: 1.2, vel: 0.55 });
-        for (const n of (steps[k].silent ? [] : steps[k].notes)) engine.pluck(n.midi ?? board.tuning[n.s] + n.f, engine.time + 0.02, { dur: 0.8 });
+        for (const n of (steps[k].silent ? [] : steps[k].notes.filter((x) => !x.held))) engine.pluck(n.midi ?? board.tuning[n.s] + n.f, engine.time + 0.02, { dur: 0.8 });
       }
       render(k);
     },

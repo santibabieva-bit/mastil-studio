@@ -34,6 +34,7 @@ import repertoire from './repertoire.js';
 import curriculum from './curriculum.js';
 import neckmap from './neckmap.js';
 import animneck from './animneck.js';
+import triadmotion from './triadmotion.js';
 import theorymotion from './theorymotion.js';
 import neckgames from './neckgames.js';
 import callresponse from './callresponse.js';
@@ -48,7 +49,7 @@ export const GROUPS = [
 ];
 
 export const TOOLS = [
-  navigator, animneck, theorymotion, neckgames, blind, neckmap, triads, quiz, chords,
+  navigator, animneck, theorymotion, neckgames, blind, neckmap, triadmotion, triads, quiz, chords,
   curriculum, routine, repertoire, drills, timing, exlib, exercises, audiolab, recorder, metronome, strum, rhythm, vibrato, log,
   jam, callresponse, phrasestudio, backing, tab, score, licks, randomiser, capo,
   ear, earplay, eq, bendlab, tuner,

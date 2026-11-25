@@ -15,6 +15,7 @@ import { listenMidi } from '../audio/midiin.js';
 import { renderChordBox } from '../ui/chordbox.js';
 import { svgToPngBlob, saveBlob, slug } from '../ui/export.js';
 import { flashNote, hitFromEvent, renderFretboard, setPlaying, clearPlaying } from '../ui/fretboard.js';
+import { createLiveBoard } from '../ui/liveboard.js';
 import {
   button, clear, h, select, segmented, toggle, slider,
 } from '../ui/dom.js';
@@ -80,6 +81,7 @@ function mount(root, ctx) {
   let lastSvg = '';
 
   const board = h('div', { class: 'fb-wrap', id: 'fb' });
+  const live = createLiveBoard(board);
   const info = h('p', { class: 'hint', id: 'nav-info', 'aria-live': 'polite' }, 'Toca cualquier traste para oírlo.');
   const notePills = h('div', { class: 'pills' });
   const legend = h('div', { class: 'legend-row' });
@@ -216,15 +218,17 @@ function mount(root, ctx) {
       });
     }
     active = notes.filter((n) => n.kind === 'note');
-    lastSvg = renderFretboard({
+    const boardOpts = {
       tuning,
       from: state.from,
       to: state.to,
       notes,
       lefty: state.lefty,
       title: `${collection.title}`,
-    });
-    board.innerHTML = lastSvg;
+    };
+    // La imagen exportada sigue siendo el SVG fijo; en pantalla, el mástil animado.
+    lastSvg = renderFretboard(boardOpts);
+    live.render(boardOpts);
 
     // Info y píldoras
     clear(notePills);

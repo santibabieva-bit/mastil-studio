@@ -9,7 +9,7 @@ import { positionLabel, rootPosition } from '../core/exercises.js';
 import { TUNINGS, getTuning } from '../core/music.js';
 import { tabFromSequence, tabToJson } from '../core/tab.js';
 import { coerce } from '../core/state.js';
-import { renderFretboard } from '../ui/fretboard.js';
+import { createLiveBoard } from '../ui/liveboard.js';
 import { createScore, scoreToolbar } from '../ui/score.js';
 import {
   button, clear, copyText, h, segmented, select, slider, toggle,
@@ -61,6 +61,7 @@ function mount(root, ctx) {
 
   const stageScore = h('div');
   const board = h('div', { class: 'fb-wrap' });
+  const live = createLiveBoard(board);
   const infoBox = h('div', { class: 'stack' });
   const navBox = h('div', { class: 'row no-print caged-nav' });
   const legendBox = h('div', { class: 'row caged-legend' });
@@ -69,11 +70,16 @@ function mount(root, ctx) {
   const paramBox = h('div', { class: 'stack' });
   const score = createScore(stageScore, {
     fingers: st.fingers,
-    onPlaying: (on) => ctx.engine.notePlaying('exlib', on),
+    onPlaying: (on) => { ctx.engine.notePlaying('exlib', on); if (!on) live.cursor(null); },
     // mientras suena, el mástil marca el par que toca en cada momento
     onBeat: (beat) => {
-      if (!built?.beatRow) return;
-      const row = built.beatRow[score.state.beats.indexOf(beat)];
+      if (!built) return;
+      const idx = score.state.beats.indexOf(beat);
+      // Aro que sigue a las notas que suenan.
+      live.cursor(null);
+      for (const n of built.beats[idx]?.notes ?? []) live.cursor(n.s, n.f, true);
+      if (!built.beatRow) return;
+      const row = built.beatRow[idx];
       if (row != null && row !== activeRow) { activeRow = row; drawBoard(); updateNav(); }
     },
   });
@@ -129,7 +135,7 @@ function mount(root, ctx) {
     const fingerOf = new Map();
     for (const b of built.beats) for (const n of b.notes) fingerOf.set(`${n.s}-${n.f}`, n.finger);
     const focus = st.shape !== 'all' ? st.shape : null;
-    board.innerHTML = renderFretboard({
+    live.render({
       tuning, from: 0, to: 17,
       notes: notes.map((n) => {
         const key = `${n.s}-${n.f}`;
@@ -179,7 +185,7 @@ function mount(root, ctx) {
     clear(legendBox);
     const tuning = tuningMidi();
     const notes = built.notes;
-    if (!notes.length) { board.innerHTML = ''; return; }
+    if (!notes.length) { board.replaceChildren(); return; }
     const frets = notes.map((n) => n.f);
     const lo = Math.min(...frets);
     const hi = Math.max(...frets);
@@ -188,7 +194,7 @@ function mount(root, ctx) {
     const fingerOf = new Map();
     for (const b of built.beats) for (const n of b.notes) fingerOf.set(`${n.s}-${n.f}`, n.finger);
     const rootPc = built.collection.root.pc;
-    board.innerHTML = renderFretboard({
+    live.render({
       tuning, from, to,
       notes: notes.map((n) => ({
         s: n.s, f: n.f, label: st.fingers && fingerOf.get(`${n.s}-${n.f}`) ? String(fingerOf.get(`${n.s}-${n.f}`)) : '',
@@ -201,7 +207,7 @@ function mount(root, ctx) {
   function drawInfo(ex) {
     clear(infoBox);
     const fam = EX_FAMILIES.find((f) => f.id === ex.family);
-    infoBox.append(
+    infoBox.append(...[
       h('div', { class: 'kicker' }, fam?.label ?? ''),
       h('h2', { style: 'margin:0' }, ex.title),
       h('p', {}, ex.desc),
@@ -209,7 +215,7 @@ function mount(root, ctx) {
       built.warnings.length ? h('p', { class: 'feedback bad' }, built.warnings.join(' ')) : null,
       h('p', { class: 'hint' }, `${built.noteCount} notas · ${built.beats.length} ${built.beats.length === 1 ? 'tiempo' : 'tiempos'}`),
       st.fingers && built.beats.length ? h('details', { class: 'syntax' }, h('summary', {}, 'Digitación sugerida (dedos 1-4, 0 = al aire)'), h('pre', { class: 'ex-notes' }, fingeringLine(built.beats.slice(0, 96)))) : null,
-    );
+    ].filter(Boolean));
   }
 
   function drawList() {

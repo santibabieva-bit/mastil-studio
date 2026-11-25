@@ -18,7 +18,7 @@ import {
 } from '../core/guide.js';
 import { BackingPlayer } from '../audio/backing.js';
 import { PLUCK_TONES } from '../audio/pluck.js';
-import { renderFretboard } from '../ui/fretboard.js';
+import { createLiveBoard } from '../ui/liveboard.js';
 import { backingToMidi } from '../core/midi.js';
 import { saveBlob } from '../ui/export.js';
 import { button, clear, h, segmented, select, slider, toggle } from '../ui/dom.js';
@@ -74,6 +74,10 @@ function mount(root, ctx) {
   const player = new BackingPlayer(engine, 'jam');
 
   const boardEl = h('div', { class: 'fretboard-wrap', style: 'overflow-x:auto' });
+  const boardLive = h('div');
+  const boardHint = h('p', { class: 'hint', style: 'text-align:center;margin:4px 0 0' });
+  boardEl.append(boardLive, boardHint);
+  const live = createLiveBoard(boardLive);
   const nowEl = h('div', { class: 'jam-now' });
   const nextEl = h('div', { class: 'jam-next' });
   const scaleEl = h('div', { class: 'stack' });
@@ -146,11 +150,11 @@ function mount(root, ctx) {
         notes.push({ s: pos.s, f: pos.f, label: '', kind: 'ghost', dim: !inWin });
       }
     }
-    boardEl.innerHTML = renderFretboard({ tuning: STD, from: 0, to: maxFret, notes, width: 1200, title: `${prettyNote(chord.symbol)} · ${suggestion.label}` });
-    if (state.follow) {
-      const hint = h('p', { class: 'hint', style: 'text-align:center;margin:4px 0 0' }, `Posición sugerida: trastes ${win.from}–${win.to} (las notas fuera de esa zona quedan atenuadas).`);
-      boardEl.append(hint);
-    }
+    // Al cambiar de acorde las notas se deslizan por cada cuerda hasta las del nuevo acorde.
+    live.render({ tuning: STD, from: 0, to: maxFret, notes, width: 1200, title: `${prettyNote(chord.symbol)} · ${suggestion.label}` });
+    live.board.zones(state.follow ? [{ from: win.from, to: win.to, color: '#3b73c9', alpha: 0.08 }] : []);
+    boardHint.hidden = !state.follow;
+    boardHint.textContent = state.follow ? `Posición sugerida: trastes ${win.from}–${win.to} (las notas fuera de esa zona quedan atenuadas).` : '';
     nowEl.replaceChildren(
       h('div', { class: 'kicker' }, playingIndex >= 0 ? 'Suena ahora' : 'Vista previa'),
       h('div', { class: 'big-number', style: 'font-size:2.4rem;line-height:1' }, prettyNote(chord.symbol)),

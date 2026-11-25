@@ -234,6 +234,7 @@ export function hitFromEvent(event) {
 
 /** Resalta/Desmarca una nota mientras suena. */
 export function flashNote(container, s, f, ms = 260) {
+  container.__live?.board?.pulse(s, f);
   const g = container.querySelector(`[data-pos="${s}-${f}"] .note-dot`);
   if (!g) return;
   g.classList.add('is-playing');
@@ -241,10 +242,13 @@ export function flashNote(container, s, f, ms = 260) {
 }
 
 export function setPlaying(container, s, f, on) {
+  // Mástil animado: un aro se desliza hasta la nota que suena.
+  container.__live?.cursor(s, f, on);
   const g = container.querySelector(`[data-pos="${s}-${f}"] .note-dot`);
   if (g) g.classList.toggle('is-playing', on);
 }
 
 export function clearPlaying(container) {
+  container.__live?.cursor(null);
   container.querySelectorAll('.is-playing').forEach((el) => el.classList.remove('is-playing'));
 }
