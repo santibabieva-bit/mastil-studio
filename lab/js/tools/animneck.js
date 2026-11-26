@@ -26,6 +26,8 @@ import {
   button, clear, h, segmented, select, slider, toggle,
 } from '../ui/dom.js';
 import { header } from './common.js';
+import { availableModes, labelPicker } from '../ui/labels.js';
+
 import { logSpot } from './neckmap.js';
 
 const SOURCES = [
@@ -182,10 +184,19 @@ function mount(root, ctx) {
     return COLORS.accent;
   }
 
+  // Etiquetas comunes: R 3 5 donde hay acorde (voces guía, tríadas, CAGED),
+  // grado respecto a la tonalidad (todo salvo la tab libre), nota, dedo o nada.
+  const tonicPc = () => parseRoot(cfg.root)?.pc ?? 9;
+  const chordCtx = () => (cfg.source === 'triads' ? { rootPc: tonicPc(), typeId: cfg.triad } : cfg.source === 'caged' ? { rootPc: tonicPc(), typeId: 'maj' } : null);
+  const labelPick = labelPicker({
+    ctx,
+    available: () => availableModes({ chord: ['guide', 'triads', 'caged'].includes(cfg.source), degree: cfg.source !== 'tab', finger: true }),
+    onChange: () => player?.setOptions({ labels: labels(), tonicPc: tonicPc(), chord: chordCtx() }),
+  });
   function labels() {
-    if (cfg.source === 'guide') return (n) => n.glabel ?? noteName(n.midi);
-    if (cfg.opts.labels === 'finger') return 'finger';
-    return 'name';
+    const mode = labelPick.mode();
+    if (mode === 'role' && cfg.source === 'guide') return (n) => n.glabel ?? '';
+    return mode;
   }
 
   function rebuild() {
@@ -216,6 +227,8 @@ function mount(root, ctx) {
       ...(shapes ? { hand: false, fingers: false, arrows: false, pick: false, next: cfg.source === 'triads' && cfg.opts.next, trail: false } : {}),
       pickView: cfg.opts.pick && !shapes ? pickView : null,
       labels: labels(),
+      tonicPc: tonicPc(),
+      chord: chordCtx(),
       colorOf,
       ...extra,
     });
@@ -492,7 +505,7 @@ function mount(root, ctx) {
     opt('Flechas de movimiento', 'arrows'),
     opt('Película: la forma del compás siguiente', 'preview'),
     opt('Clic de metrónomo', 'click'),
-    h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Etiquetas'), segmented([{ value: 'name', label: 'Nota' }, { value: 'finger', label: 'Dedo' }], cfg.opts.labels, (v) => { cfg.opts.labels = v; store('opts', cfg.opts); player.setOptions({ labels: labels() }); })),
+    (labelPick.refresh(), labelPick.el),
     button('⚖ Comparar digitaciones', { variant: 'outline', onClick: showCompare }),
     h('p', { class: 'hint' }, 'Consejo: empieza al 50 % con todo a la vista, luego quita ayudas una a una. La meta es tocarlo sin mirar.'),
   );

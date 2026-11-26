@@ -550,7 +550,7 @@ export const TRIAD_EXERCISES = [
     desc: 'La misma progresión con cuatro ritmos: reggae en el contratiempo, funk de semicorcheas en las cuerdas agudas, Motown en el 2 y el 4, y country con bajo alterno.',
     tip: 'Apaga el acorde levantando un poco la mano izquierda justo después de cada golpe: el silencio es parte del ritmo.' },
   { id: 'ornaments', family: 'style', title: 'Tríadas con adornos', run: ornaments, params: ['key', 'progression', 'set'], defaults: { progression: 'I-IV-V', set: 0 },
-    desc: 'Cada acorde con tres adornos clásicos del soul y el country: entrada deslizando desde un traste abajo, hammer-on desde la sus4 y la 6.ª añadida.',
+    desc: 'Cada acorde con tres adornos clásicos del soul y el country: entrada deslizando desde un traste abajo, pull-off desde la sus4 a la 3.ª y la 6.ª añadida.',
     tip: 'Los adornos se tocan con la mano izquierda: ataca una vez y deja que los ligados suenen solos.' },
   { id: 'improv', family: 'game', title: 'Improvisa con las notas del acorde', run: improvBacking, params: ['key', 'progression'], defaults: { progression: 'I-V-vi-IV' },
     desc: 'Suena la base y el mástil enseña las notas de cada acorde. Toca con el micrófono o MIDI: puntúa cuántas notas caen en el acorde.',

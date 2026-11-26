@@ -17,6 +17,8 @@ import {
   button, clear, h, segmented, select, slider,
 } from '../ui/dom.js';
 import { header } from './common.js';
+import { availableModes, labelPicker } from '../ui/labels.js';
+
 
 const VAMPS = [
   { id: 'dorian', scale: 'dorian' },
@@ -39,6 +41,7 @@ function mount(root, ctx) {
   };
   const board = createAnimBoard({ tuning, from: 0, to: 15, title: 'Pregunta y respuesta' });
   board.el.classList.add('is-clickable');
+  const labelPick = labelPicker({ ctx, available: () => availableModes({ chord: true, finger: true }), onChange: (v) => player.setOptions({ labels: v }) });
   const player = createPlayer(board, engine);
   const chordEl = h('div', { class: 'anim-chord' }, '');
   const phase = h('div', { class: 'anim-caption' }, 'Pulsa «Empezar»: la guitarra pregunta dos compases y tú respondes otros dos.');
@@ -129,7 +132,7 @@ function mount(root, ctx) {
       for (let b = 0; b < 4; b += 1) engine.click(tb + b * spb, { accent: b === 0, sound: 'click', vol: 0.3 });
     }
     later(t0, () => { phase.textContent = '🎸 Escucha la pregunta…'; board.dots([]); });
-    player.load(st.call, { next: true, trail: 8, hand: true, arrows: true, labels: 'name' });
+    player.load(st.call, { next: true, trail: 8, hand: true, arrows: true, labels: labelPick.mode(), tonicPc: parseRoot(cfg.root)?.pc ?? 9, chord: st.chord });
     let t = start;
     st.call.forEach((stp, i) => {
       const n = stp.notes[0];
@@ -208,7 +211,7 @@ function mount(root, ctx) {
   root.append(
     header('Tocar y escribir', 'Pregunta y respuesta', 'La guitarra «pregunta» con una frase de dos compases que queda abierta; tú «respondes» con otros dos que la cierren en una nota del acorde. Así se aprende a improvisar como se habla: escuchando y contestando.'),
     h('div', { class: 'tool-grid tool-grid--rev' },
-      h('section', { class: 'panel stack' }, chordEl, board.el, phase, result, h('div', { class: 'row', style: 'justify-content:center' }, startBtn), histEl),
+      h('section', { class: 'panel stack' }, chordEl, board.el, labelPick.el, phase, result, h('div', { class: 'row', style: 'justify-content:center' }, startBtn), histEl),
       h('section', { class: 'panel stack' },
         h('div', { class: 'field' }, h('label', {}, 'Base'), select(VAMPS.map((v) => ({ value: v.id, label: jamPreset(v.id).label })), cfg.vamp, (v) => { cfg.vamp = v; ctx.storage.set('duel-vamp', v); })),
         h('div', { class: 'field' }, h('label', {}, 'Tónica'), select(ROOT_CHOICES.map((r) => ({ value: r, label: prettyNote(r) })), cfg.root, (v) => { cfg.root = v; ctx.storage.set('duel-root', v); })),

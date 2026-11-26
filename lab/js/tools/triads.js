@@ -13,6 +13,9 @@ import {
 } from '../core/triads.js';
 import { buildDiagram } from '../../../src/diagram.js';
 import { createLiveBoard } from '../ui/liveboard.js';
+import { chordPcs } from '../core/chords.js';
+import { autoFingers, availableModes, labelPicker } from '../ui/labels.js';
+import { fingerPosition } from '../core/fingers.js';
 import { saveBlob, slug, svgToPngBlob } from '../ui/export.js';
 import { button, clear, h, segmented, select, toggle } from '../ui/dom.js';
 import { header, rootChoices } from './common.js';
@@ -66,10 +69,15 @@ function mount(root, ctx) {
   // el mismo diagrama se transforma (las notas se deslizan) en vez de redibujarse.
   const keep = new Map();
   let cardSeq = 0;
+  const labelPick = labelPicker({ ctx, available: () => availableModes({ chord: true, finger: state.view !== 'scale' && state.view !== 'overlay' }), onChange: () => draw() });
   function live(id, opts, attrs = { class: 'fretboard-wrap', style: 'overflow-x:auto' }) {
     let el = keep.get(id);
     if (!el) { el = h('div', attrs); createLiveBoard(el); keep.set(id, el); }
-    el.__live.render(opts);
+    // Etiqueta común; en los voicings el dedo es el del agarre (todas las notas a la vez).
+    const notes = (opts.notes ?? []).filter((n) => (n.kind ?? 'note') !== 'ghost');
+    const fingers = opts.grip ? fingerPosition(notes, { grip: true }) : (opts.fingers ?? null);
+    const { grip: _grip, fingers: _fingers, ...rest } = opts;
+    el.__live.render({ ...rest, labels: { mode: labelPick.mode(), tonicPc: rootPc(), chord: { rootPc: rootPc(), pcs: chordPcs(rootPc(), state.type) }, fingers } });
     return el;
   }
   const rootPc = () => resolveProgression(state.root, [{ s: 0, t: 'maj' }])[0].rootPc;
@@ -92,7 +100,7 @@ function mount(root, ctx) {
 
   function voicingCard(v, tones, title, extra = null) {
     const card = h('button', { type: 'button', class: 'voicing-card', title: 'Oír este voicing' },
-      live(`card-${state.view}-${cardSeq++}`, miniBoardOpts(v, tones, title), {}),
+      live(`card-${state.view}-${cardSeq++}`, { ...miniBoardOpts(v, tones, title), grip: true }, {}),
       h('div', { class: 'hint' }, title),
       extra,
     );
@@ -143,7 +151,7 @@ function mount(root, ctx) {
     if (state.posIndex >= positions.length) state.posIndex = 0;
     const pos = positions[state.posIndex];
     const tones = chordTones(rootPc(), state.type);
-    const boardNotes = pos.notes.map((n) => ({ s: n.s, f: n.f, label: n.finger ? String(n.finger) : '0', role: n.role, kind: 'note' }));
+    const boardNotes = pos.notes.map((n) => ({ s: n.s, f: n.f, label: n.finger ? String(n.finger) : '0', role: n.role, kind: 'note', finger: n.finger }));
     box.append(
       h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Posición'),
         segmented(positions.map((q, i) => ({ value: i, label: `${i + 1}`, title: positionLabel(q, rootPc(), STD) })), state.posIndex, (v) => { state.posIndex = Number(v); draw(); })),
@@ -257,6 +265,7 @@ function mount(root, ctx) {
 
   function draw() {
     cardSeq = 0;
+    labelPick.refresh();
     clear(out);
     refresh();
     const box = h('div', { class: 'stack' });
@@ -271,6 +280,7 @@ function mount(root, ctx) {
       h('div', { class: 'field' }, h('label', {}, 'Acorde'), select(TYPE_CHOICES, state.type, (v) => { state.type = v; state.setIndex = 0; state.posIndex = 0; draw(); })),
     ),
     h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Qué quieres estudiar'), segmented(VIEWS, state.view, (v) => { state.view = v; state.posIndex = 0; draw(); })),
+    labelPick.el,
     chordTitle,
   );
 

@@ -166,7 +166,7 @@ export function arpeggioPositions({ tuning, rootPc, typeId, maxFret = 15 }) {
         }
       }
       if (new Set(notes.map((n) => n.s)).size < tuning.length - 1) continue;
-      positions.push({ id, from, to, notes: withFingers(notes) });
+      positions.push({ id, from, to, notes: withFingers(notes, { openChord: true }) });
       break;
     }
   }

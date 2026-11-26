@@ -16,6 +16,8 @@ import {
   button, clear, h, select, slider, toggle,
 } from '../ui/dom.js';
 import { header } from './common.js';
+import { availableModes, labelPicker } from '../ui/labels.js';
+
 
 const SCALES = ['pentatonicMinor', 'pentatonicMajor', 'blues', 'major', 'naturalMinor', 'dorian', 'mixolydian'];
 
@@ -33,6 +35,7 @@ function mount(root, ctx) {
   const board = createAnimBoard({ tuning, from: 0, to: 15, title: 'Dibuja tu frase' });
   board.el.classList.add('is-drawing', 'is-clickable');
   const player = createPlayer(board, engine, { onEnd: () => draw() });
+  const labelPick = labelPicker({ ctx, available: () => availableModes({ chord: false, finger: true }), onChange: (v) => { player.setOptions({ labels: v }); extraPlayers.forEach((p) => p.setOptions({ labels: v })); } });
   const info = h('p', { class: 'anim-caption' }, '');
   const varBox = h('div', { class: 'stack' });
   const extraPlayers = [];
@@ -82,7 +85,7 @@ function mount(root, ctx) {
 
   async function play() {
     if (!points.length) return;
-    player.load(steps(), { next: true, trail: 8, hand: true, arrows: true, labels: 'name' });
+    player.load(steps(), { next: true, trail: 8, hand: true, arrows: true, labels: labelPick.mode(), tonicPc: parseRoot(cfg.root)?.pc ?? 9 });
     await player.play({ tempo: cfg.bpm, countIn: 4 });
   }
 
@@ -122,7 +125,7 @@ function mount(root, ctx) {
       const maxF = Math.max(12, ...v.steps.flatMap((s) => s.notes.map((n) => n.f + 1)));
       const b = createAnimBoard({ tuning, from: 0, to: Math.min(17, maxF), title: v.label });
       const p = createPlayer(b, engine);
-      p.load(v.steps, { next: true, trail: 8, hand: true, arrows: true });
+      p.load(v.steps, { next: true, trail: 8, hand: true, arrows: true, labels: labelPick.mode(), tonicPc: parseRoot(cfg.root)?.pc ?? 9 });
       p.show(v.steps[0].notes.length ? 0 : 1);
       extraPlayers.push(p);
       varBox.append(h('section', { class: 'panel stack' },
@@ -142,7 +145,7 @@ function mount(root, ctx) {
     header('Tocar y escribir', 'Estudio de frases', 'Dibuja una frase sobre el mástil y escúchala: el ritmo sale de cuándo pulsas. Después la app te propone variaciones animadas para desarrollar la idea, como hacen los improvisadores con sus motivos.'),
     h('div', { class: 'tool-grid tool-grid--rev' },
       h('div', { class: 'stack' },
-        h('section', { class: 'panel stack' }, board.el, info,
+        h('section', { class: 'panel stack' }, board.el, labelPick.el, info,
           h('div', { class: 'row', style: 'justify-content:center' },
             button('▶ Reproducir', { variant: 'accent', attrs: { class: 'btn btn-accent btn-lg' }, onClick: play }),
             button('↶ Deshacer', { variant: 'ghost', onClick: () => { points.pop(); save(); draw(); } }),

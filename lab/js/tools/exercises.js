@@ -11,6 +11,8 @@ import { coerce } from '../core/state.js';
 import { Transport } from '../audio/transport.js';
 import { clearPlaying, setPlaying, hitFromEvent, flashNote } from '../ui/fretboard.js';
 import { createLiveBoard } from '../ui/liveboard.js';
+import { autoFingers, availableModes, labelPicker } from '../ui/labels.js';
+
 import { button, clear, copyText, h, segmented, select, slider, toggle } from '../ui/dom.js';
 import { header, playToggle, safeCollection, scalePicker } from './common.js';
 
@@ -54,6 +56,7 @@ function mount(root, ctx) {
 
   const board = h('div', { class: 'fb-wrap' });
   const live = createLiveBoard(board);
+  const labelPick = labelPicker({ ctx, available: () => availableModes({ chord: state.family !== 'scale', finger: true }), onChange: () => render() });
   const tabBox = h('div', { id: 'tab-out', 'aria-label': 'Tablatura del ejercicio (alphaTab)' });
   const score = createScore(tabBox, { stave: 'tab', cursor: false });
   ctx.onCleanup(() => score.destroy());
@@ -143,7 +146,7 @@ function mount(root, ctx) {
     const notes = roles
       .filter((n) => set.has(`${n.s}-${n.f}`))
       .map((n) => ({ s: n.s, f: n.f, label: n.name, role: n.isRoot ? 'root' : null }));
-    live.render({ tuning: tuningMidi, from, to: Math.max(hi, from + 5), notes, title: `${collection.title} – posición` });
+    live.render({ tuning: tuningMidi, from, to: Math.max(hi, from + 5), notes, title: `${collection.title} – posición`, labels: { mode: labelPick.mode(), tonicPc: collection.root.pc, chord: state.family !== 'scale' ? { rootPc: collection.root.pc, pcs: collection.notes.map((n) => n.pc) } : null } });
     drawTab();
     meta.textContent = `${collection.title} · ${sequence.length} notas${partial ? ' · posición parcial (no cabe en el mástil)' : ''}`;
     ctx.setParams({
@@ -225,7 +228,7 @@ function mount(root, ctx) {
         ),
       ),
       h('div', { class: 'stack' },
-        h('section', { class: 'panel' }, board, meta),
+        h('section', { class: 'panel' }, board, meta, labelPick.el),
         h('section', { class: 'panel' },
           scoreToolbar(score, { playback: false, stave: true }),
           h('div', { class: 'row row--between' }, h('h2', {}, 'Tablatura'),

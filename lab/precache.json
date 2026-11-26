@@ -103,6 +103,7 @@
   "./js/ui/dom.js",
   "./js/ui/export.js",
   "./js/ui/fretboard.js",
+  "./js/ui/labels.js",
   "./js/ui/liveboard.js",
   "./js/ui/score.js",
   "./lab.css",

@@ -8,6 +8,7 @@
 
 import { COLORS, createAnimBoard } from './animboard.js';
 import { ROLE_COLORS } from './fretboard.js';
+import { autoFingers, labelFor } from './labels.js';
 
 const SELECT = '#df812f';
 const GHOST = '#cfc6b2';
@@ -66,7 +67,7 @@ export function createLiveBoard(container, { morph = true } = {}) {
     get board() { return board; },
     /** Igual que renderFretboard(o), pero animado. Devuelve el tablero. */
     render(o) {
-      const { notes = [], title, ...geo } = o;
+      const { notes = [], title, labels: _labels, ...geo } = o;
       const key = JSON.stringify([geo.tuning, geo.from ?? 0, geo.to ?? 15, !!geo.lefty, geo.stringNames !== false, geo.width ?? 1200, geo.gap ?? null]);
       if (!board || key !== sig || !container.contains(board.el)) {
         board = createAnimBoard({ ...geo, title: title ?? 'Mástil de guitarra' });
@@ -75,7 +76,14 @@ export function createLiveBoard(container, { morph = true } = {}) {
         cursorOn = new Map();
       }
       board.setTitle(title);
-      const visible = notes.filter((n) => n.s >= 0 && n.s < geo.tuning.length);
+      let visible = notes.filter((n) => n.s >= 0 && n.s < geo.tuning.length);
+      // Etiqueta común (R 3 5, grado, nota, dedo o nada): o.labels = { mode, tonicPc, chord, fingers }.
+      if (o.labels?.mode) {
+        const L = o.labels;
+        const active = visible.filter((n) => (n.kind ?? 'note') !== 'ghost' && !n.dim);
+        const fingers = L.mode === 'finger' ? (L.fingers ?? autoFingers(active)) : null;
+        visible = visible.map((n) => ((n.kind ?? 'note') === 'ghost' ? n : { ...n, label: labelFor(n, L.mode, { tuning: geo.tuning, tonicPc: L.tonicPc, chord: L.chord, fingers }) }));
+      }
       const keys = morph ? morphKeys(visible) : visible.map((n) => `${n.s}-${n.f}`);
       // Los fantasmas debajo, los seleccionados encima (como en el dibujo fijo).
       const order = { ghost: 0, note: 1, hidden: 1, select: 2 };

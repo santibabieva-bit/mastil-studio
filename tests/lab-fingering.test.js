@@ -5,7 +5,9 @@ import {
 } from '../lab/js/core/fingers.js';
 import { EXERCISES, buildExercise } from '../lab/js/core/exlib.js';
 import { ladderPerString, positionLabel } from '../lab/js/core/exercises.js';
-import { arpeggioPositions } from '../lab/js/core/triads.js';
+import { arpeggioPositions, voicingsOnSet } from '../lab/js/core/triads.js';
+import { autoFingers, roleOf } from '../lab/js/ui/labels.js';
+import { chordPcs } from '../lab/js/core/chords.js';
 import { buildDrill } from '../lab/js/core/drills.js';
 import { handPositions, toSteps } from '../lab/js/core/motion.js';
 import { TUNINGS, createNoteCollection } from '../lab/js/core/music.js';
@@ -34,10 +36,13 @@ test('cinco trastes con uno libre: se reparten sin estirar (6, 9, 10 → 1, 3, 4
 });
 
 test('posición abierta: traste = dedo, y la forma de La en el traste 2 va con 1-2-3', () => {
-  const m = fingerPosition([{ s: 4, f: 0 }, { s: 3, f: 2 }, { s: 2, f: 2 }, { s: 1, f: 2 }, { s: 0, f: 0 }]);
+  const m = fingerPosition([{ s: 4, f: 0 }, { s: 3, f: 2 }, { s: 2, f: 2 }, { s: 1, f: 2 }, { s: 0, f: 0 }], { openChord: true });
   assert.deepEqual([m.get('3-2'), m.get('2-2'), m.get('1-2')], [1, 2, 3]);
   assert.equal(m.get('4-0'), 0);
-  const e = fingerPosition([{ s: 5, f: 0 }, { s: 4, f: 2 }, { s: 3, f: 2 }, { s: 2, f: 1 }]);
+  // En una escala de primera posición, el traste 2 es siempre el dedo 2.
+  const scale = fingerPosition([{ s: 3, f: 0 }, { s: 3, f: 2 }, { s: 2, f: 0 }, { s: 2, f: 2 }, { s: 1, f: 1 }, { s: 1, f: 3 }]);
+  assert.deepEqual([scale.get('3-2'), scale.get('2-2'), scale.get('1-3')], [2, 2, 3]);
+  const e = fingerPosition([{ s: 5, f: 0 }, { s: 4, f: 2 }, { s: 3, f: 2 }, { s: 2, f: 1 }], { grip: true });
   assert.deepEqual([e.get('2-1'), e.get('4-2'), e.get('3-2')], [1, 2, 3]);
 });
 
@@ -146,6 +151,93 @@ test('cajas de cinco trastes: los tonos nunca con dedos contiguos (Mi menor caja
         for (const list of byS.values()) {
           for (let i = 1; i < list.length; i += 1) {
             if (list[i].f - list[i - 1].f >= 2) assert.ok(list[i].finger - list[i - 1].finger >= 2, `${root} ${quality} posición ${p + 1}: ${fingers(list)}`);
+          }
+        }
+      }
+    }
+  }
+});
+
+const grip = (shape) => {
+  const m = fingerPosition(shape.map(([s, f]) => ({ s, f })), { grip: true });
+  return shape.map(([s, f]) => m.get(`${s}-${f}`)).join('-');
+};
+
+test('agarres: tríadas cerradas y cuatriadas como se enseñan', () => {
+  assert.equal(grip([[2, 5], [1, 5], [0, 3]]), '3-4-1');
+  assert.equal(grip([[2, 8], [1, 8], [0, 9]]), '1-1-2');
+  assert.equal(grip([[4, 7], [3, 8], [2, 5], [1, 8]]), '2-3-1-4');
+  assert.equal(grip([[3, 10], [2, 8], [1, 8], [0, 6]]), '4-2-3-1');
+  assert.equal(grip([[3, 9], [2, 12], [1, 13], [0, 12]]), '1-2-4-3');
+  assert.equal(grip([[3, 1], [2, 3], [1, 1], [0, 3]]), '1-3-1-4');
+  assert.equal(grip([[4, 0], [3, 2], [2, 5]]), '0-1-4');
+  assert.equal(grip([[5, 0], [4, 2], [3, 2], [2, 1]]), '0-2-3-1');
+  assert.equal(grip([[4, 3], [3, 2], [2, 0]]), '3-2-0', 'Do abierto: traste = dedo');
+  assert.equal(grip([[4, 0], [3, 2], [2, 2], [1, 2]]), '0-1-2-3', 'La abierto');
+  assert.equal(grip([[4, 0], [3, 1], [2, 5]]), '0-1-4', 'disminuido con cuerda al aire');
+  assert.equal(grip([[5, 8], [4, 6], [3, 4]]), '4-3-1', 'disminuido cerrado en fundamental');
+  assert.equal(grip([[4, 15], [3, 13], [2, 11]]), '4-3-1');
+  // Ningún agarre del Triad Lab usa un dedo en dos trastes ni pasa del meñique.
+  for (const typeId of ['maj', 'm', 'dim', 'aug', 'sus2', 'sus4', 'maj7', 'm7', '7', 'm7b5', 'dim7']) {
+    for (const rootPc of [0, 5, 9]) {
+      const n = chordPcs(rootPc, typeId).length;
+      for (let top = 0; top + n <= 6; top += 1) {
+        const set = Array.from({ length: n }, (_, i) => top + i);
+        for (const v of voicingsOnSet({ tuning: STD, rootPc, typeId, set, maxFret: 15 })) {
+          const m = fingerPosition(v.notes, { grip: true });
+          const byFinger = new Map();
+          for (const x of v.notes.filter((y) => y.f > 0)) {
+            const fg = m.get(`${x.s}-${x.f}`);
+            assert.ok(fg >= 1 && fg <= 4);
+            if (byFinger.has(fg)) assert.equal(byFinger.get(fg), x.f, `${rootPc}${typeId}: mismo dedo en dos trastes`);
+            byFinger.set(fg, x.f);
+          }
+        }
+      }
+    }
+  }
+});
+
+test('etiqueta R 3 5: por intervalo, con 2 y 4 en los sus, 6 en las sextas y tensiones', () => {
+  const r = (iv, typeId, root = 0) => roleOf(60 + root + iv, { rootPc: root, pcs: chordPcs(root, typeId) });
+  assert.deepEqual([0, 4, 7].map((iv) => r(iv, 'maj')), ['R', '3', '5']);
+  assert.deepEqual([0, 3, 6, 9].map((iv) => r(iv, 'dim7')), ['R', '3', '5', '7']);
+  assert.equal(r(2, 'sus2'), '2');
+  assert.equal(r(5, 'sus4'), '4');
+  assert.equal(r(9, '6'), '6');
+  assert.equal(r(2, '9'), '9');
+  assert.equal(r(10, '9'), '7');
+  assert.equal(r(8, 'aug'), '5');
+  assert.equal(r(6, 'maj'), '♯11');
+});
+
+test('digitación automática: solo en posiciones que se pueden tocar', () => {
+  const box = [[5, 5], [5, 8], [4, 5], [4, 7], [3, 5], [3, 7], [2, 5], [2, 7], [1, 5], [1, 8], [0, 5], [0, 8]].map(([s, f]) => ({ s, f }));
+  assert.ok(autoFingers(box));
+  const wide = [[0, 1], [0, 3], [0, 6], [1, 1], [1, 4]].map(([s, f]) => ({ s, f }));
+  assert.equal(autoFingers(wide), null, 'pentatónica de 6 trastes no es una posición');
+  const four = [[2, 4], [2, 5], [2, 6], [2, 8]].map(([s, f]) => ({ s, f }));
+  assert.equal(autoFingers(four), null, 'cuatro notas en una cuerda');
+});
+
+test('Tríadas en movimiento: notas mantenidas conservan el dedo y nadie cruza dedos', async () => {
+  const { buildTriadExercise } = await import('../lab/js/core/triadex.js');
+  const src = (await import('node:fs')).readFileSync(new URL('../lab/js/tools/triadmotion.js', import.meta.url), 'utf8');
+  const body = src.slice(src.indexOf('  function withGripFingers(list) {'), src.indexOf('  function decorate(list) {'));
+  // eslint-disable-next-line no-new-func
+  const make = new Function('fingerPosition', `${body}; return withGripFingers;`);
+  const withGripFingers = make(fingerPosition);
+  for (const id of ['passing', 'ornaments', 'rhythm', 'inv-h', 'prog-caged', 'pedal', 'chromatic']) {
+    for (const keyPc of [0, 7, 9]) {
+      const steps = withGripFingers(buildTriadExercise(id, { keyPc, rootPc: keyPc }).steps);
+      for (const st of steps) {
+        const pressed = st.notes.filter((n) => n.f > 0);
+        for (const a of pressed) {
+          assert.ok(a.finger >= 1 && a.finger <= 4, `${id}: sin dedo`);
+          for (const b of pressed) {
+            if (a === b) continue;
+            if (a.finger === b.finger) assert.equal(a.f, b.f, `${id} ${keyPc}: dedo ${a.finger} en ${a.f} y ${b.f}`);
+            if (a.f < b.f) assert.ok(a.finger <= b.finger, `${id} ${keyPc}: dedos cruzados ${JSON.stringify(pressed.map((n) => [n.s, n.f, n.finger]))}`);
           }
         }
       }

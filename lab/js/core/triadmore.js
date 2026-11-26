@@ -270,7 +270,7 @@ export function rhythmGroove(p) {
   return steps;
 }
 
-/** Adornos: entrada deslizando desde un traste abajo, hammer-on desde la sus4 y la 6.ª añadida. */
+/** Adornos: entrada deslizando desde un traste abajo, pull-off desde la sus4 y la 6.ª añadida. */
 export function ornaments(p) {
   const chords = progressionChords(p);
   const si = setsOf(p.set)[0];
@@ -291,7 +291,7 @@ export function ornaments(p) {
       const susStep = chordStep(sus, { rootPc: c.rootPc, typeId: 'sus4', name: chordName(c.rootPc, 'sus4', p.keyPc) }, 0.5);
       const moved = new Set(base.notes.filter((n) => !sus.notes.some((m) => m.s === n.s && m.f === n.f)).map((n) => n.s));
       steps.push({ ...susStep, kind: 'orn', label: 'sus4…' });
-      steps.push({ ...base, d: 0.5, notes: base.notes.map((n) => (moved.has(n.s) ? { ...n, art: 'H' } : { ...n, held: true })), label: 'hammer-on a la 3.ª' });
+      steps.push({ ...base, d: 0.5, notes: base.notes.map((n) => (moved.has(n.s) ? { ...n, art: 'P' } : { ...n, held: true })), label: 'pull-off a la 3.ª' });
     } else steps.push({ ...base, d: 1 });
     // 3) La 5.ª sube a la 6.ª y vuelve (1 pulso), si cabe en la mano.
     const fifth = base.notes.find((n) => n.role === 'fifth');

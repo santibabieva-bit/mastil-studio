@@ -8,8 +8,10 @@
 import { boardGeometry, hitFromEvent, renderFretboard } from './fretboard.js';
 import { midiName, prettyNote } from '../core/music.js';
 import {
-  crossingType, fingerLayout, handPositions, stepTimes,
+  crossingType, fingerFor, fingerLayout, handPositions, stepTimes,
 } from '../core/motion.js';
+import { chordPcs } from '../core/chords.js';
+import { degreeOf, roleOf } from './labels.js';
 import { h } from './dom.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -386,12 +388,21 @@ export function createPlayer(board, engine, { onStep = null, onEnd = null } = {}
   let loop = false;
   let current = -1;
 
+  // Etiquetas comunes: role (R 3 5, con el acorde del paso), degree (con
+  // opts.tonicPc), name, finger (el que trae la nota o el de la mano) y none.
   const labelOf = (n, i) => {
     const l = opts.labels ?? 'name';
     if (typeof l === 'function') return l(n, i);
-    if (l === 'finger') return n.finger ?? (n.f === 0 ? '0' : '');
+    const midi = n.midi ?? board.tuning[n.s] + n.f;
+    if (l === 'finger') return String(n.finger ?? (n.f === 0 ? 0 : hands[i] ? fingerFor(n.f, hands[i]) : ''));
     if (l === 'none') return '';
-    return noteName(n.midi ?? board.tuning[n.s] + n.f);
+    if (l === 'degree') return opts.tonicPc == null ? '' : degreeOf(midi, opts.tonicPc);
+    if (l === 'role') {
+      const ch = (typeof steps[i]?.chord === 'object' ? steps[i].chord : null) ?? opts.chord;
+      if (!ch) return '';
+      return roleOf(midi, { rootPc: ch.rootPc, pcs: ch.pcs ?? (ch.typeId ? chordPcs(ch.rootPc, ch.typeId) : null) });
+    }
+    return noteName(midi);
   };
 
   function render(i) {

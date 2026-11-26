@@ -10,6 +10,9 @@ import { TUNINGS, getTuning } from '../core/music.js';
 import { tabFromSequence, tabToJson } from '../core/tab.js';
 import { coerce } from '../core/state.js';
 import { createLiveBoard } from '../ui/liveboard.js';
+import { chordPcs } from '../core/chords.js';
+import { autoFingers, availableModes, labelPicker } from '../ui/labels.js';
+
 import { createScore, scoreToolbar } from '../ui/score.js';
 import {
   button, clear, copyText, h, segmented, select, slider, toggle,
@@ -62,6 +65,17 @@ function mount(root, ctx) {
   const stageScore = h('div');
   const board = h('div', { class: 'fb-wrap' });
   const live = createLiveBoard(board);
+  const labelPick = labelPicker({
+    ctx,
+    available: () => availableModes({ chord: exerciseById(st.ex).family === 'arp', finger: true }),
+    onChange: () => drawBoard(),
+  });
+  /** Contexto de las etiquetas: tónica de la escala, acorde del arpegio y dedos del ejercicio. */
+  function boardLabels(fingerOf) {
+    const ex = exerciseById(st.ex);
+    const rootPc = built.collection.root.pc;
+    return { mode: labelPick.mode(), tonicPc: rootPc, chord: ex.family === 'arp' ? { rootPc, pcs: chordPcs(rootPc, st.chord ?? 'm7') } : null, fingers: fingerOf };
+  }
   const infoBox = h('div', { class: 'stack' });
   const navBox = h('div', { class: 'row no-print caged-nav' });
   const legendBox = h('div', { class: 'row caged-legend' });
@@ -143,7 +157,7 @@ function mount(root, ctx) {
         const inFocus = !focus || n.zones.includes(focus);
         return {
           s: n.s, f: n.f, kind: isHot ? 'select' : 'note',
-          label: isHot && st.fingers && fingerOf.get(key) ? String(fingerOf.get(key)) : n.name,
+          label: n.name,
           colors: n.zones.length ? n.zones.map((z) => CAGED_COLORS[z]) : ['#8a8272'],
           ring: isHot ? '#17231e' : null,
           alpha: isHot ? 1 : row ? (inFocus ? 0.4 : 0.16) : (inFocus ? 0.55 : 0.2),
@@ -151,6 +165,7 @@ function mount(root, ctx) {
         };
       }),
       title: exerciseById(st.ex).title,
+      labels: boardLabels(new Map([...fingerOf].filter(([k]) => hot.has(k)))),
     });
     clear(legendBox);
     for (const id of CAGED_ORDER) {
@@ -197,10 +212,11 @@ function mount(root, ctx) {
     live.render({
       tuning, from, to,
       notes: notes.map((n) => ({
-        s: n.s, f: n.f, label: st.fingers && fingerOf.get(`${n.s}-${n.f}`) ? String(fingerOf.get(`${n.s}-${n.f}`)) : '',
+        s: n.s, f: n.f, label: '',
         role: (tuning[n.s] + n.f) % 12 === rootPc && !exerciseById(st.ex).noScale ? 'root' : null,
       })),
       title: exerciseById(st.ex).title,
+      labels: boardLabels(fingerOf),
     });
   }
 
@@ -349,7 +365,7 @@ function mount(root, ctx) {
         drawPlayback(),
       ),
       h('div', { class: 'stack' },
-        h('section', { class: 'panel stack' }, infoBox, navBox, board, legendBox),
+        h('section', { class: 'panel stack' }, infoBox, navBox, board, legendBox, labelPick.el),
         h('section', { class: 'panel stack' },
           scoreToolbar(score, { layout: false, extra: [
             button('Abrir en Tab Creator', { variant: 'outline', onClick: toTab }),

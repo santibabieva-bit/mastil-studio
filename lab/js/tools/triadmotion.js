@@ -18,6 +18,9 @@ import {
 } from '../core/triadmore.js';
 import { mod } from '../core/music.js';
 import { createTriadModes, triadHeatmap } from './triadmodes.js';
+import { availableModes, labelPicker, roleOf as roleOfChord } from '../ui/labels.js';
+import { chordPcs } from '../core/chords.js';
+import { fingerPosition } from '../core/fingers.js';
 import { COLORS, createAnimBoard, createPlayer, noteName } from '../ui/animboard.js';
 import { createScore, scoreToolbar } from '../ui/score.js';
 import {
@@ -47,7 +50,6 @@ function mount(root, ctx) {
     beats: saved.beats ?? 2,
     bpm: saved.bpm ?? 70,
     style: saved.style ?? 'block',
-    labels: saved.labels ?? 'role',
     next: saved.next ?? true,
     arrows: saved.arrows ?? true,
     bass: saved.bass ?? false,
@@ -148,16 +150,99 @@ function mount(root, ctx) {
     }
   }
 
+  const labelPick = labelPicker({ ctx, available: () => availableModes({ chord: true, finger: true }), onChange: () => player.setOptions({ labels: labelOf }) });
   function labelOf(n, i) {
-    if (st.labels === 'role') return n.role === 'pass' ? '' : ROLE_LABEL[n.role] ?? '';
+    const mode = labelPick.mode();
+    if (mode === 'finger') return n.finger == null ? '' : String(n.finger);
+    if (mode === 'none') return '';
+    if (mode === 'role') {
+      const ch = steps[i]?.chord;
+      if (n.role === 'pass' || !ch) return '';
+      return roleOfChord(n.midi, { rootPc: ch.rootPc, pcs: ch.pcs ?? (ch.typeId ? chordPcs(ch.rootPc, ch.typeId) : []) });
+    }
     // Grado en la escala mayor de la tonalidad elegida (no en la tríada).
-    if (st.labels === 'degree') return scaleDegree(n.midi, keyPc(), steps[i]?.chord);
-    if (st.labels === 'name') return noteName(n.midi);
+    if (mode === 'degree') return scaleDegree(n.midi, keyPc(), steps[i]?.chord);
+    if (mode === 'name') return noteName(n.midi);
     return '';
   }
 
-  function decorate(list) {
+  /**
+   * Dedos: cada acorde con su agarre (todas las notas a la vez) y las notas
+   * sueltas con el dedo que les toca junto al último acorde.
+   */
+  function withGripFingers(list) {
+    let last = null; // último agarre completo
+    let now = new Map(); // lo que pisa ahora cada cuerda: s → { f, finger }
+    const grip = (notes) => {
+      const m = fingerPosition(notes, { grip: true });
+      return notes.map((n) => ({ ...n, finger: m.get(`${n.s}-${n.f}`) }));
+    };
+    const remember = (notes, reset) => {
+      if (reset) now = new Map();
+      for (const n of notes) if (n.f > 0 && n.finger != null) now.set(n.s, { s: n.s, f: n.f, finger: n.finger });
+    };
     return list.map((s) => {
+      if (!s.notes.length) return s;
+      const held = s.notes.filter((n) => n.held);
+      if (!held.length) {
+        if (s.notes.length > 1) {
+          // Acorde, silencio con su acorde o adorno completo: su propio agarre.
+          const out = { ...s, notes: grip(s.notes) };
+          if (s.kind !== 'rest') last = out;
+          remember(out.notes, true);
+          return out;
+        }
+        // Nota suelta (arpegio, bajo): el dedo que le toca junto a lo que se pisa.
+        const n = s.notes[0];
+        const same = now.get(n.s)?.f === n.f ? now.get(n.s) : null;
+        const finger = same?.finger ?? moveFinger(n, { notes: [...now.values()] }) ?? grip([n])[0].finger;
+        const out = { ...s, notes: [{ ...n, finger }] };
+        remember(out.notes, false);
+        return out;
+      }
+      // Notas mantenidas: conservan el dedo con que se pisan; la que se mueve usa un dedo libre.
+      const keep = (n) => (now.get(n.s)?.f === n.f ? now.get(n.s).finger : last?.notes.find((x) => x.s === n.s && x.f === n.f)?.finger);
+      const heldOut = held.map((n) => ({ ...n, finger: keep(n) }));
+      if (heldOut.some((n) => n.finger == null)) {
+        const all = grip(s.notes);
+        remember(all, true);
+        return { ...s, notes: all };
+      }
+      const moving = s.notes.filter((n) => !n.held).map((n) => ({ ...n, finger: moveFinger(n, { notes: heldOut }) }));
+      if (moving.some((n) => n.finger == null)) {
+        // No hay dedo libre sin soltar el acorde: se vuelve a digitar todo junto
+        // (p. ej. las dos voces de abajo en cejilla y la de arriba camina).
+        const all = grip(s.notes);
+        remember(all, true);
+        return { ...s, notes: all };
+      }
+      const byKey = new Map([...heldOut, ...moving].map((n) => [`${n.s}-${n.f}-${n.held ? 'h' : 'm'}`, n]));
+      const notes = s.notes.map((n) => byKey.get(`${n.s}-${n.f}-${n.held ? 'h' : 'm'}`) ?? n);
+      remember(notes, false);
+      return { ...s, notes };
+    });
+  }
+
+  /**
+   * Dedo para una nota que se mueve mientras otras siguen pisadas: un dedo por
+   * traste respecto a las pisadas, sin usar un dedo ocupado ni cruzarlos; si no
+   * hay hueco, el mismo dedo que tenía esa voz (deslizando).
+   */
+  function moveFinger(n, ref) {
+    if (n.f === 0) return 0;
+    const pressed = (ref?.notes ?? []).filter((x) => x.f > 0 && !(x.s === n.s));
+    const used = new Map(pressed.map((x) => [x.finger, x.f]));
+    const prevSame = ref?.notes.find((x) => x.s === n.s && x.f > 0);
+    const anchor = pressed.length ? pressed.reduce((a, b) => (a.f <= b.f ? a : b)) : null;
+    const ideal = anchor ? anchor.finger + (n.f - anchor.f) : (prevSame ? prevSame.finger + (n.f - prevSame.f) : 1);
+    const ok = (fg) => fg >= 1 && fg <= 4 && (!used.has(fg) || used.get(fg) === n.f)
+      && pressed.every((x) => (x.f < n.f ? x.finger < fg : x.f > n.f ? x.finger > fg : true));
+    for (const fg of [ideal, ideal + 1, ideal - 1, ideal + 2, ideal - 2]) if (ok(fg)) return fg;
+    return null;
+  }
+
+  function decorate(list) {
+    return withGripFingers(list).map((s) => {
       const out = { ...s };
       if (s.kind === 'chord') {
         if (st.style === 'strum') { out.strum = s.notes.map((n) => n.midi); out.silent = true; }
@@ -520,7 +605,7 @@ function mount(root, ctx) {
     h('summary', {}, 'Sonido y animación'),
     h('div', { class: 'stack' },
       h('div', { class: 'field' }, h('label', {}, 'Cómo suena el acorde'), segmented([{ value: 'block', label: 'Plaqué' }, { value: 'strum', label: 'Rasgueo' }, { value: 'arp', label: 'Arpegio' }], st.style, (v) => { st.style = v; save(); load(); })),
-      h('div', { class: 'field' }, h('label', {}, 'Etiquetas'), segmented([{ value: 'role', label: 'R 3 5' }, { value: 'degree', label: 'Grado (escala)' }, { value: 'name', label: 'Notas' }, { value: 'none', label: 'Nada' }], st.labels, (v) => { st.labels = v; save(); player.setOptions({ labels: labelOf }); })),
+      labelPick.el,
       toggle('Ver la forma siguiente', st.next, (v) => { st.next = v; save(); player.setOptions({ next: v }); }),
       toggle('Flechas de las voces que se mueven', st.arrows, (v) => { st.arrows = v; save(); }),
       toggle('Bajo con la tónica', st.bass, (v) => { st.bass = v; save(); load(); }),

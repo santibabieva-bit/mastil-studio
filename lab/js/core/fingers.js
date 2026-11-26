@@ -51,11 +51,15 @@ function fixString(list, stretched = false) {
  * Dedos de una posición. notes: [{ s, f }]. Devuelve Map «s-f» → dedo.
  * `mode`: 'auto' (detecta 3 notas por cuerda), 'window' o '3nps'.
  */
-export function fingerPosition(notes, { mode = 'auto' } = {}) {
+export function fingerPosition(notes, { mode = 'auto', grip = false, openChord = false } = {}) {
   const out = new Map();
   const fretted = notes.filter((n) => n.f > 0);
   for (const n of notes) if (n.f === 0) out.set(key(n), 0);
   if (!fretted.length) return out;
+  if (grip && new Set(fretted.map((n) => n.s)).size === fretted.length) {
+    for (const [k, v] of gripFingers(fretted, notes.some((n) => n.f === 0))) out.set(k, v);
+    return out;
+  }
   const byString = new Map();
   for (const n of fretted) {
     if (!byString.has(n.s)) byString.set(n.s, new Set());
@@ -111,8 +115,59 @@ export function fingerPosition(notes, { mode = 'auto' } = {}) {
     fixString(list, stretched);
     for (const x of list) out.set(`${s}-${x.f}`, x.finger);
   }
-  if (openPos) openChordFingers(fretted, out);
+  if (openPos && openChord) openChordFingers(fretted, out);
   return out;
+}
+
+/**
+ * Agarre de un acorde (una nota por cuerda, todas a la vez).
+ * - El traste más bajo con varias cuerdas va en cejilla con el índice
+ *   (en posición abierta, con dedos distintos: La = 1-2-3).
+ * - Primero se prueba un dedo por traste (Do en 5-5-3 → 3-4-1); si no cabe,
+ *   los dedos van seguidos por traste y, dentro del traste, de la cuerda grave
+ *   a la aguda (C7 en 7-8-5-8 → 2-3-1-4; Cm7 en 10-8-8-6 → 4-2-3-1).
+ */
+function gripFingers(fretted, hasOpen) {
+  const byFret = new Map();
+  for (const n of fretted) {
+    if (!byFret.has(n.f)) byFret.set(n.f, []);
+    byFret.get(n.f).push(n.s);
+  }
+  const frets = [...byFret.keys()].sort((a, b) => a - b);
+  const lo = frets[0];
+  // En posición abierta (cuerdas al aire y todo en los cuatro primeros trastes) el dedo es el traste.
+  const firstPos = hasOpen && frets[frets.length - 1] <= 4;
+  const natural = (f) => (firstPos ? f : f - lo + 1);
+  // Orden: por traste y, dentro del traste, de la cuerda grave a la aguda.
+  const order = [];
+  frets.forEach((f, k) => {
+    const ss = [...byFret.get(f)].sort((a, b) => b - a);
+    const barre = k === 0 && ss.length > 1 && !hasOpen;
+    ss.forEach((s, i) => order.push({ s, f, barre, i, n: ss.length }));
+  });
+  const result = (vals) => new Map(order.map((o, k) => [`${o.s}-${o.f}`, vals[k]]));
+  // 1) Un dedo por traste (Do en 5-5-3 → 3-4-1; Do abierto x-3-2-0 → 3-2).
+  const vals = [];
+  let prev = 0;
+  for (const o of order) {
+    // En primera posición, varias cuerdas en el mismo traste empiezan antes (La = 1-2-3, Mi = 2-3 con el 1 en el traste 1).
+    const want = firstPos && o.n > 1 && o.i === 0 ? Math.max(1, natural(o.f) - (o.n - 1)) : natural(o.f);
+    const v = o.barre ? 1 : Math.max(prev + 1, want);
+    vals.push(v);
+    prev = v;
+  }
+  if (Math.max(...vals) <= 4) return result(vals);
+  // 2) No cabe: el más agudo va al meñique y los demás bajan conservando el orden
+  //    y, en lo posible, la distancia (C7 7-8-5-8 → 2-3-1-4; dim 8-6-4 → 4-3-1).
+  const capped = [...vals];
+  capped[capped.length - 1] = 4;
+  for (let k = capped.length - 2; k >= 0; k -= 1) {
+    if (order[k].barre && order[k + 1].barre) capped[k] = capped[k + 1];
+    else capped[k] = Math.min(capped[k], capped[k + 1] - (order[k].f === order[k + 1].f || !order[k + 1].barre ? 1 : 0));
+  }
+  if (capped.every((v) => v >= 1)) return result(capped);
+  // 3) Último recurso: dedos seguidos.
+  return result(order.map((o, k) => Math.min(4, k + 1)));
 }
 
 /**

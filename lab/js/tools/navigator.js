@@ -1,7 +1,7 @@
 /** Fretboard Navigator: escalas, arpegios y acordes con audio, posiciones y voicings. */
 
 import {
-  TUNINGS, collectBoardNotes, degreeLabel, getTuning, midiToFreq, midiName, prettyNote, solfege,
+  TUNINGS, collectBoardNotes, degreeLabel, getTuning, midiToFreq, midiName, prettyNote,
 } from '../core/music.js';
 import { stringSetVoicings } from '../core/chords.js';
 import { guitarMidis } from '../audio/backing.js';
@@ -16,17 +16,13 @@ import { renderChordBox } from '../ui/chordbox.js';
 import { svgToPngBlob, saveBlob, slug } from '../ui/export.js';
 import { flashNote, hitFromEvent, renderFretboard, setPlaying, clearPlaying } from '../ui/fretboard.js';
 import { createLiveBoard } from '../ui/liveboard.js';
+import { autoFingers, availableModes, labelPicker } from '../ui/labels.js';
+
 import {
   button, clear, h, select, segmented, toggle, slider,
 } from '../ui/dom.js';
 import { header, playToggle, safeCollection, scalePicker } from './common.js';
 
-const LABEL_MODES = [
-  { value: 'name', label: 'Nombres' },
-  { value: 'solfege', label: 'Do-Re-Mi' },
-  { value: 'degree', label: 'Grados' },
-  { value: 'none', label: 'Puntos' },
-];
 
 const POSITION_MODES = [
   { value: 'all', label: 'Todo' },
@@ -82,6 +78,12 @@ function mount(root, ctx) {
 
   const board = h('div', { class: 'fb-wrap', id: 'fb' });
   const live = createLiveBoard(board);
+  let fingersNow = null;
+  const labelPick = labelPicker({
+    ctx,
+    available: () => availableModes({ chord: currentCollection().family.id !== 'scale', finger: fingersNow != null }),
+    onChange: () => render(),
+  });
   const info = h('p', { class: 'hint', id: 'nav-info', 'aria-live': 'polite' }, 'Toca cualquier traste para oírlo.');
   const notePills = h('div', { class: 'pills' });
   const legend = h('div', { class: 'legend-row' });
@@ -144,11 +146,19 @@ function mount(root, ctx) {
     return safeCollection(state.root, state.family, state.quality);
   }
 
+  /** Etiqueta común: R 3 5 (arpegios y acordes), grado, nota, dedo (en posiciones) o nada. */
   function labelFor(note, collection) {
-    if (state.labels === 'none') return '';
-    if (state.labels === 'degree') return note.degree;
-    if (state.labels === 'solfege') return solfege(note.pc, collection.root.prefer);
+    const mode = labelPick.mode();
+    if (mode === 'none') return '';
+    if (mode === 'degree') return note.degree;
+    if (mode === 'role') return roleLabel(note, collection);
+    if (mode === 'finger') { const f = fingersNow?.get(`${note.s}-${note.f}`); return f == null ? '' : String(f); }
     return note.name;
+  }
+  function roleLabel(note, collection) {
+    const order = collection.notes.map((n) => n.pc);
+    const k = order.indexOf(note.pc);
+    return ['R', '3', '5', '7', '9', '11', '13'][k] ?? '';
   }
 
   /* ─── cálculo de notas activas ─── */
@@ -202,10 +212,12 @@ function mount(root, ctx) {
     const isChord = collection.family.id !== 'scale';
     const voicing = voicingList[state.vPick];
     const notes = [];
+    const insideOf = (n) => (voicing ? voicing.notes.some((vn) => vn.s === n.s && vn.f === n.f) : !activeKeys || activeKeys.has(`${n.s}-${n.f}`));
+    // Digitación solo cuando lo que se ve es una posición (caja, N por cuerda, voicing).
+    fingersNow = autoFingers(all.filter(insideOf), { grip: Boolean(voicing) });
+    labelPick.refresh();
     for (const n of all) {
-      const key = `${n.s}-${n.f}`;
-      let inside = !activeKeys || activeKeys.has(key);
-      if (voicing) inside = voicing.notes.some((vn) => vn.s === n.s && vn.f === n.f);
+      const inside = insideOf(n);
       if (!inside && !state.ghost) continue;
       const role = state.roles ? roleOf(n.degree, n.isRoot) : n.isRoot ? 'root' : null;
       notes.push({
@@ -247,7 +259,7 @@ function mount(root, ctx) {
   function syncUrl() {
     ctx.setParams({
       root: state.root, fam: state.family, q: state.quality, tun: state.tuning, from: state.from, to: state.to,
-      lab: state.labels, roles: state.roles ? 1 : 0, lefty: state.lefty ? 1 : 0, pos: state.mode, pi: state.posIndex,
+      roles: state.roles ? 1 : 0, lefty: state.lefty ? 1 : 0, pos: state.mode, pi: state.posIndex,
       bs: state.boxStart, bw: state.boxSpan, cg: state.caged, ghost: state.ghost ? 1 : 0, bpm: tempo.input.value,
     });
   }
@@ -448,7 +460,7 @@ function mount(root, ctx) {
     ),
     h('div', { class: 'grid-3', style: 'margin-top:16px;align-items:start' },
       h('section', { class: 'panel stack' }, h('h2', {}, 'Qué mostrar'), picker.el,
-        h('div', { class: 'field' }, h('span', { class: 'legend' }, 'Etiquetas'), segmented(LABEL_MODES, state.labels, (v) => { state.labels = v; render(); })),
+        labelPick.el,
       ),
       h('section', { class: 'panel stack' }, h('h2', {}, 'Mástil'),
         h('div', { class: 'field' }, h('label', {}, 'Afinación'), tuningSel),

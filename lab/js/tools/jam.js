@@ -19,6 +19,9 @@ import {
 import { BackingPlayer } from '../audio/backing.js';
 import { PLUCK_TONES } from '../audio/pluck.js';
 import { createLiveBoard } from '../ui/liveboard.js';
+import { chordPcs } from '../core/chords.js';
+import { autoFingers, availableModes, labelPicker } from '../ui/labels.js';
+
 import { backingToMidi } from '../core/midi.js';
 import { saveBlob } from '../ui/export.js';
 import { button, clear, h, segmented, select, slider, toggle } from '../ui/dom.js';
@@ -78,6 +81,8 @@ function mount(root, ctx) {
   const boardHint = h('p', { class: 'hint', style: 'text-align:center;margin:4px 0 0' });
   boardEl.append(boardLive, boardHint);
   const live = createLiveBoard(boardLive);
+  const labelPick = labelPicker({ ctx, available: () => availableModes({ chord: true, finger: false }), onChange: () => drawBoard(playingIndex >= 0 ? playingIndex : viewIndex) });
+  boardEl.append(labelPick.el);
   const nowEl = h('div', { class: 'jam-now' });
   const nextEl = h('div', { class: 'jam-next' });
   const scaleEl = h('div', { class: 'stack' });
@@ -151,7 +156,7 @@ function mount(root, ctx) {
       }
     }
     // Al cambiar de acorde las notas se deslizan por cada cuerda hasta las del nuevo acorde.
-    live.render({ tuning: STD, from: 0, to: maxFret, notes, width: 1200, title: `${prettyNote(chord.symbol)} · ${suggestion.label}` });
+    live.render({ tuning: STD, from: 0, to: maxFret, notes, width: 1200, title: `${prettyNote(chord.symbol)} · ${suggestion.label}`, labels: { mode: labelPick.mode(), tonicPc: keyInfo().rootPc, chord: { rootPc: chord.rootPc, pcs: chordPcs(chord.rootPc, chord.typeId) } } });
     live.board.zones(state.follow ? [{ from: win.from, to: win.to, color: '#3b73c9', alpha: 0.08 }] : []);
     boardHint.hidden = !state.follow;
     boardHint.textContent = state.follow ? `Posición sugerida: trastes ${win.from}–${win.to} (las notas fuera de esa zona quedan atenuadas).` : '';
