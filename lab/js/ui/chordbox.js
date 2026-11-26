@@ -20,7 +20,7 @@ export function renderChordBox({ frets, title = '', size = 1, rootStringIndex = 
   const w = left * 2 + gx * (strings - 1);
   const h = top + gy * rows + 18;
   const parts = [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w * size}" height="${h * size}" role="img" aria-label="${esc(title || 'Acorde')}" font-family="Segoe UI, system-ui, Arial, sans-serif">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" class="cb-svg" viewBox="0 0 ${w} ${h}" width="${w * size}" height="${h * size}" role="img" aria-label="${esc(title || 'Acorde')}" font-family="Segoe UI, system-ui, Arial, sans-serif">`,
   ];
   if (title) parts.push(`<text x="${w / 2}" y="14" text-anchor="middle" font-size="13" font-weight="700" fill="#17231e">${esc(title)}</text>`);
   // Cejilla o número de traste inicial

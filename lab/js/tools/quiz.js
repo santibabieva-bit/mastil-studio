@@ -101,7 +101,7 @@ function mount(root, ctx) {
     ctx.logSeconds(Math.min(seconds, 20 * 60));
     save();
     const rate = run.answered ? Math.round((run.right / run.answered) * 100) : 0;
-    const summary = h('div', { class: 'panel', style: 'background:#fffdf8;margin-bottom:14px' },
+    const summary = h('div', { class: 'panel', style: 'background:var(--surface);margin-bottom:14px' },
       h('div', { class: 'kicker' }, 'Resultado'),
       h('div', { class: 'stat-grid' },
         h('div', { class: 'stat' }, h('strong', {}, `${run.right}/${run.answered}`), h('span', {}, 'aciertos')),

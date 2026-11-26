@@ -107,7 +107,7 @@ export function renderFretboard(o) {
   } = g;
 
   const parts = [];
-  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${esc(title)}" font-family="Segoe UI, system-ui, Arial, sans-serif">`);
+  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" class="fb-svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${esc(title)}" font-family="Segoe UI, system-ui, Arial, sans-serif">`);
   if (background) parts.push(`<rect width="${width}" height="${height}" fill="#fffdf8" rx="14"/>`);
   parts.push(`<rect x="${lefty ? width - leftMargin - boardW : leftMargin}" y="${top}" width="${boardW}" height="${boardH}" rx="5" fill="${COLORS.board}" stroke="${COLORS.boardEdge}" stroke-width="1.4"/>`);
 

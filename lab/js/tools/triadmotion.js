@@ -597,7 +597,7 @@ function mount(root, ctx) {
       h('span', {}, h('i', { style: `background:${COLORS.third}` }), '3 tercera'),
       h('span', {}, h('i', { style: `background:${COLORS.fifth}` }), '5 quinta'),
       h('span', {}, h('i', { style: `background:${COLORS.seventh}` }), 'nota común (late)'),
-      h('span', {}, h('i', { style: 'background:#fffdf8;border:2px dashed #df812f' }), 'forma siguiente'),
+      h('span', {}, h('i', { style: 'background:var(--surface);border:2px dashed #df812f' }), 'forma siguiente'),
     );
   }
 

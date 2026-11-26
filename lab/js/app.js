@@ -8,6 +8,7 @@ import { addMinutes, currentStreak, dateKey, emptyPractice } from './core/practi
 import { GROUPS, TOOLS, TOOL_BY_ID } from './tools/index.js';
 import { renderHome } from './tools/home.js';
 import { clear, copyText, h, toast } from './ui/dom.js';
+import { applyTheme, themeMenu, watchSystemTheme } from './ui/theme.js';
 
 const storage = createStorage();
 
@@ -180,6 +181,10 @@ function route() {
   window.scrollTo({ top: 0 });
   main.focus({ preventScroll: true });
 }
+
+applyTheme();
+watchSystemTheme();
+document.getElementById('share-btn').before(themeMenu());
 
 document.getElementById('share-btn').addEventListener('click', async () => {
   const ok = await copyText(location.href);

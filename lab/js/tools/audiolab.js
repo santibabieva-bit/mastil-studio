@@ -26,7 +26,7 @@ function mount(root, ctx) {
   let playing = false;
   let countTimer = 0;
 
-  const canvas = h('canvas', { width: 1000, height: 120, style: 'width:100%;height:120px;border-radius:10px;background:#fffdf8;border:1px solid var(--line);cursor:pointer', role: 'img', 'aria-label': 'Forma de onda: pulsa para ir a ese punto' });
+  const canvas = h('canvas', { width: 1000, height: 120, style: 'width:100%;height:120px;border-radius:10px;background:var(--surface);border:1px solid var(--line);cursor:pointer', role: 'img', 'aria-label': 'Forma de onda: pulsa para ir a ese punto' });
   const timeEl = h('div', { class: 'big-number', style: 'text-align:center;font-size:1.8rem' }, '0:00.0');
   const info = h('p', { class: 'hint', style: 'text-align:center' }, 'Elige un archivo de audio (mp3, wav, m4a, ogg…) o de vídeo para empezar.');
   const markersEl = h('div', { class: 'stack' });
