@@ -8,8 +8,44 @@ import { mod } from './music.js';
 /** Notas por cuerda recomendadas según el tamaño de la colección. */
 export function defaultPerString(collection) {
   const n = collection.notes.length;
+  // La escala de blues es la pentatónica (2 por cuerda) más la ♭5: no es de 3 notas por cuerda.
+  if (isBlues(collection)) return 2;
   if (collection.family.id !== 'scale') return n <= 3 ? 2 : 2;
   return n >= 6 ? 3 : 2;
+}
+
+const isBlues = (collection) => collection.quality?.id === 'blues';
+/** ♭5 de la escala de blues (la «blue note»): no cuenta como nota de arranque de una caja. */
+const bluePc = (collection) => mod(collection.root.pc + 6, 12);
+/** ¿Sirve esta nota para arrancar una posición? (en blues, todas menos la ♭5). */
+const startable = (collection, pc) => collection.noteByPc.has(pc) && !(isBlues(collection) && pc === bluePc(collection));
+
+/**
+ * Inserta la ♭5 en una caja pentatónica, en la cuerda de la nota de abajo si
+ * cabe en la mano (un traste por encima) o en la de arriba si no.
+ */
+function insertBlueNotes(ladder, tuning, collection) {
+  if (!ladder.length) return ladder;
+  const b5 = bluePc(collection);
+  const frets = ladder.filter((n) => n.f > 0).map((n) => n.f);
+  const lo = frets.length ? Math.min(...frets) : 0;
+  const hi = frets.length ? Math.max(...frets) : 4;
+  const out = [];
+  for (let i = 0; i < ladder.length; i += 1) {
+    const a = ladder[i];
+    out.push(a);
+    const b = ladder[i + 1];
+    if (!b) continue;
+    for (let m = a.midi + 1; m < b.midi; m += 1) {
+      if (mod(m, 12) !== b5) continue;
+      const onA = { s: a.s, f: a.f + (m - a.midi), midi: m };
+      const onB = { s: b.s, f: b.f - (b.midi - m), midi: m };
+      const fitsA = onA.f <= Math.max(hi, lo + 3);
+      const fitsB = onB.f >= Math.max(0, Math.min(lo, hi - 3)) && onB.s !== a.s;
+      out.push(fitsA || !fitsB ? onA : onB);
+    }
+  }
+  return out;
 }
 
 /**
@@ -24,13 +60,13 @@ export function ladderPerString({ tuning, collection, position = 0, perString = 
   // Candidatas de arranque: notas de la colección entre el aire y el traste 11.
   const starts = [];
   for (let f = 0; f < 12; f += 1) {
-    if (collection.noteByPc.has(mod(lowOpen + f, 12))) starts.push(lowOpen + f);
+    if (startable(collection, mod(lowOpen + f, 12))) starts.push(lowOpen + f);
   }
   const startMidi = starts[position % starts.length];
-  // Escalera ascendente a partir de ahí.
+  // Escalera ascendente a partir de ahí (en blues, primero la caja pentatónica).
   const pitches = [];
   for (let m = startMidi; m < startMidi + 60; m += 1) {
-    if (collection.noteByPc.has(mod(m, 12))) pitches.push(m);
+    if (startable(collection, mod(m, 12))) pitches.push(m);
   }
   const ladder = [];
   let cursor = 0;
@@ -52,7 +88,7 @@ export function ladderPerString({ tuning, collection, position = 0, perString = 
       taken += 1;
     }
   }
-  return { ladder, start: startMidi, partial: false };
+  return { ladder: isBlues(collection) ? insertBlueNotes(ladder, tuning, collection) : ladder, start: startMidi, partial: false };
 }
 
 /** Escalera «caja»: todas las notas de la ventana de trastes, por altura. */
@@ -206,7 +242,7 @@ export function rootPosition(tuning, collection) {
   let index = 0;
   for (let f = 0; f < 12; f += 1) {
     const pc = mod(lowOpen + f, 12);
-    if (collection.noteByPc.has(pc)) {
+    if (startable(collection, pc)) {
       if (pc === collection.root.pc) return index;
       index += 1;
     }
@@ -220,7 +256,7 @@ export function positionLabel(tuning, collection, position) {
   const starts = [];
   for (let f = 0; f < 12; f += 1) {
     const pc = mod(lowOpen + f, 12);
-    if (collection.noteByPc.has(pc)) starts.push({ pc, f });
+    if (startable(collection, pc)) starts.push({ pc, f });
   }
   const start = starts[position % starts.length];
   const note = collection.noteByPc.get(start.pc);

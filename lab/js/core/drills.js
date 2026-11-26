@@ -9,7 +9,7 @@
 
 import { mod } from './music.js';
 import { chordPcs } from './chords.js';
-import { arpeggioPositions } from './triads.js';
+import { threePerString } from './fingers.js';
 
 export const DRILL_GROUPS = [
   { id: 'picking', label: 'Púa' },
@@ -17,6 +17,7 @@ export const DRILL_GROUPS = [
   { id: 'hands', label: 'Manos' },
   { id: 'advanced', label: 'Avanzado' },
 ];
+
 
 /** Traste más bajo (>= min) de la cuerda `s` que da la clase de altura `pc`. */
 export function fretFor(tuning, s, pc, min = 0) {
@@ -96,13 +97,22 @@ const DRILLS = [
     tempo: [60, 140],
     build: ({ tuning, root = 9 }) => {
       const base = fretFor(tuning, 5, root, 3);
-      // Escala menor natural, tres notas por cuerda, ascendente.
-      const shape = [[0, 2, 3], [0, 2, 3], [0, 2], [0, 2, 3], [0, 1, 3], [0, 2, 3]];
-      return shape.flatMap((offsets, i) => {
-        const s = 5 - i;
-        const shift = i >= 4 ? -1 : 0;
-        return offsets.map((o) => E(s, base + o + shift));
-      });
+      // Escala menor natural, tres notas por cuerda desde la tónica en la 6.ª:
+      // cada cuerda continúa la escala y se digita por sus intervalos (1-3-4 / 1-2-4).
+      const minor = [0, 2, 3, 5, 7, 8, 10];
+      const rootMidi = tuning[5] + base;
+      const out = [];
+      let deg = 0;
+      for (let s = 5; s >= 0; s -= 1) {
+        const frets = [];
+        for (let k = 0; k < 3; k += 1, deg += 1) {
+          const midi = rootMidi + minor[deg % 7] + 12 * Math.floor(deg / 7);
+          frets.push(midi - tuning[s]);
+        }
+        const fingers = threePerString(frets);
+        frets.forEach((f, k) => out.push(E(s, f, { finger: fingers[k] })));
+      }
+      return out;
     },
     picking: 'economy',
   },
@@ -114,17 +124,12 @@ const DRILLS = [
     tip: 'Silencia con la mano izquierda cada nota antes de pasar a la siguiente para que no suenen juntas.',
     tempo: [50, 120],
     build: ({ tuning, root = 9, quality = 'm' }) => {
-      const pcs = chordPcs(root, quality);
-      const positions = arpeggioPositions({ tuning, rootPc: root, typeId: quality, width: 5, maxFret: 15 });
-      const pos = positions.find((p) => p.from >= 3) ?? positions[0];
-      if (!pos) return [];
-      const perString = new Map();
-      for (const n of pos.notes) {
-        if (!pcs.includes(n.pc)) continue;
-        const cur = perString.get(n.s);
-        if (!cur || n.f < cur.f) perString.set(n.s, n);
-      }
-      const up = [...perString.values()].sort((a, b) => b.s - a.s);
+      // Forma de cejilla con la tónica en la 6.ª (forma E): una nota por cuerda,
+      // como se enseña el sweep. Menor: 1-3-3-1-1-1 (Am en 5.ª: 5-7-7-5-5-5).
+      const third = quality === 'm' || quality === 'dim' ? 3 : 4;
+      const r = fretFor(tuning, 5, root, 1);
+      const shape = [[5, r, 'R'], [4, r + 2, '5'], [3, r + 2, 'R'], [2, r + third - 3, '3'], [1, r, '5'], [0, r, 'R']];
+      const up = shape.map(([s, f]) => ({ s, f, finger: f === r ? 1 : f === r + 1 ? 2 : 3 }));
       return [...up.map((n) => ({ ...E(n.s, n.f, { finger: n.finger }), pick: 'D' })), ...[...up].reverse().slice(1).map((n) => ({ ...E(n.s, n.f, { finger: n.finger }), pick: 'U' }))];
     },
     picking: 'keep',
@@ -153,9 +158,10 @@ const DRILLS = [
     desc: 'Alterna dos notas lo más rápido posible usando sólo la mano izquierda.',
     tip: 'Mantén la mano relajada: la tensión es lo que te frena. Empieza lento.',
     tempo: [60, 160],
-    build: ({ startFret = 7 }) => [3, 2, 1].flatMap((s) => [
+    // Trino 1-2 (semitono) en la 4.ª cuerda, 1-3 (tono) en la 3.ª y 1-2 / 1-3 en la 2.ª.
+    build: ({ startFret = 7 }) => [[3, 2], [2, 3], [1, 2], [1, 3]].flatMap(([s, b]) => [
       E(s, startFret, { finger: 1 }),
-      ...Array.from({ length: 7 }, (_, i) => E(s, i % 2 === 0 ? startFret + 1 : startFret, { art: i % 2 === 0 ? 'H' : 'P', finger: i % 2 === 0 ? 2 : 1 })),
+      ...Array.from({ length: 7 }, (_, i) => E(s, i % 2 === 0 ? startFret + b - 1 : startFret, { art: i % 2 === 0 ? 'H' : 'P', finger: i % 2 === 0 ? b : 1 })),
     ]),
     picking: 'alternate',
   },

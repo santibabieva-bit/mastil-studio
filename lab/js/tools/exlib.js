@@ -276,7 +276,7 @@ function mount(root, ctx) {
       row.push(f('Par de cuerdas', select(pairs.map((q) => ({ value: q.join('-'), label: stringPairLabel(q) })), current ? current.join('-') : '', (v) => { st.pair = v.split('-').map(Number); refresh(); })));
     }
     if (params.has('harmonic')) row.push(toggle('Las dos notas a la vez (apagado = arpegiadas)', st.harmonic, (v) => { st.harmonic = v; refresh(); }));
-    if (params.has('arpPos') && built.exercise && ex.family === 'arp') row.push(slider({ min: 0, max: 8, value: st.arpPos, label: 'Posición', format: (v) => `${v + 1}`, onInput: (v) => { st.arpPos = v; scheduleRefresh(); } }));
+    if (params.has('arpPos') && built.exercise && ex.family === 'arp') row.push(slider({ min: 0, max: Math.max(0, (built.positions ?? 5) - 1), value: Math.min(st.arpPos, Math.max(0, (built.positions ?? 5) - 1)), label: 'Forma CAGED', format: (v) => `${v + 1}`, onInput: (v) => { st.arpPos = v; scheduleRefresh(); } }));
     row.push(f('Dirección', segmented(DIRECTIONS, st.direction, (v) => { st.direction = v; refresh(); })));
     row.push(f('Afinación', select(Object.values(TUNINGS).filter((t) => t.midi.length >= 4 && t.id !== 'ukulele').map((t) => ({ value: t.id, label: t.label })), st.tuning, (v) => { st.tuning = v; st.position = -1; st.pair = null; refresh(); })));
     paramBox.append(...row);

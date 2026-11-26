@@ -14,6 +14,7 @@
 import { createNoteCollection, mod } from './music.js';
 import { chordPcs } from './chords.js';
 import { arpeggioPositions } from './triads.js';
+import { approachFinger, fingerDouble, withFingers } from './fingers.js';
 import { independenceEvents, permutations24 } from './drills.js';
 import {
   PATTERNS, defaultPerString, intervalPattern, ladderPerString, rootPosition, positionLabel,
@@ -47,17 +48,13 @@ function range(from, to) {
   return out;
 }
 
-/** Dedo recomendado: un dedo por traste a partir del traste más bajo del entorno. */
+/**
+ * Dedos para notas que aún no los traen: todas se tratan como una sola
+ * posición (un dedo por traste, estiramiento de un traste como mucho). Las
+ * escaleras de escala ya llegan digitadas desde ladderFor.
+ */
 export function assignFingers(notes) {
-  const out = notes.map((n) => ({ ...n }));
-  for (const n of out) {
-    if (n.finger != null) continue;
-    if (n.f === 0) { n.finger = 0; continue; }
-    const near = out.filter((m) => m.f > 0 && Math.abs(m.s - n.s) <= 1).map((m) => m.f);
-    const base = Math.min(...near);
-    n.finger = Math.max(1, Math.min(4, n.f - base + 1));
-  }
-  return out;
+  return withFingers(notes.map((n) => ({ ...n })));
 }
 
 function uniquePositions(notes) {
@@ -84,7 +81,8 @@ function resolveCollection(ex, o) {
 function ladderFor(o, collection, positionOverride = null) {
   const pos = positionOverride ?? (o.position == null || o.position < 0 ? rootPosition(o.tuning, collection) : o.position);
   const count = positionLabel(o.tuning, collection, 0).count;
-  return ladderPerString({ tuning: o.tuning, collection, position: pos % count, maxFret: o.maxFret ?? 17 }).ladder;
+  // Cada posición se digita entera (caja, ventana con estiramiento o 3 notas por cuerda).
+  return withFingers(ladderPerString({ tuning: o.tuning, collection, position: pos % count, maxFret: o.maxFret ?? 17 }).ladder);
 }
 
 /** Aplica un generador de índices sobre la escalera según la dirección. */
@@ -393,7 +391,8 @@ function approachExercise(kind) {
         const pre = def.pre(t.midi, collection).map((m) => placeMidi(o.tuning, m, t.s, maxFret));
         // Si no cabe alguna nota de aproximación (p. ej. por debajo de la cuerda grave al aire), se omite ese objetivo.
         if (pre.some((x) => !x)) continue;
-        for (const placed of pre) notes.push({ ...placed, approach: true });
+        // La nota cromática va con el dedo vecino del que toca el objetivo.
+        for (const placed of pre) notes.push({ ...placed, approach: true, finger: approachFinger(placed, t) });
         notes.push({ ...t });
       }
       return { notes };
@@ -531,8 +530,17 @@ export const EXERCISES = [
       const count = positionLabel(o.tuning, collection, 0).count;
       const first = rootPosition(o.tuning, collection);
       const notes = [];
+      let prevLow = -1;
       for (let k = 0; k < count; k += 1) {
-        const ladder = ladderFor(o, collection, (first + k) % count);
+        // Cada caja con su digitación; si la caja vuelve a la cejuela, se sube una octava.
+        let ladder = ladderFor(o, collection, (first + k) % count);
+        const low = Math.min(...ladder.map((n) => n.f));
+        if (low < prevLow) {
+          ladder = ladder.map((n) => ({ ...n, f: n.f + 12, midi: n.midi + 12 }));
+          if (ladder.some((n) => n.f > (o.maxFret ?? 17))) break;
+          ladder = withFingers(ladder.map(({ finger, ...n }) => n));
+        }
+        prevLow = Math.min(...ladder.map((n) => n.f));
         notes.push(...ladder);
       }
       return { notes };
@@ -589,7 +597,7 @@ export const EXERCISES = [
     id: 'arp-position',
     family: 'arp',
     title: 'Arpegio por posiciones del mástil',
-    desc: 'Las notas del acorde elegido dentro de una ventana de cinco trastes, de grave a aguda y de vuelta.',
+    desc: 'Las notas del acorde elegido en cada una de las cinco formas CAGED, de grave a aguda y de vuelta, con la digitación estándar de la posición.',
     tip: 'Mira dónde caen la tónica y la tercera: son las notas que definen el acorde. Prueba a cantarlas.',
     params: ['chord', 'arpPos'],
     noScale: true,
@@ -687,11 +695,25 @@ function permutations3() {
 
 export const PERMUTATION3_NAMES = permutations3().map((p) => p.join('-'));
 
+/**
+ * Dobles cuerdas: la mano se coloca para cada par (terceras, sextas,
+ * octavas…). Si el par se toca arpegiado, son dos beats seguidos.
+ */
 function assignBeatFingers(beats) {
-  const flatNotes = beats.flatMap((b) => b.notes);
-  const withFingers = assignFingers(flatNotes);
-  let i = 0;
-  return beats.map((b) => ({ ...b, notes: b.notes.map(() => withFingers[i++]) }));
+  const out = beats.map((b) => ({ ...b, notes: b.notes.map((n) => ({ ...n })) }));
+  const setPair = (a, b) => {
+    const [low, high] = a.s > b.s ? [a, b] : [b, a];
+    const [fl, fh] = fingerDouble(low, high);
+    low.finger = fl;
+    high.finger = fh;
+  };
+  for (let i = 0; i < out.length; i += 1) {
+    const ns = out[i].notes;
+    if (ns.length === 2) setPair(ns[0], ns[1]);
+    else if (ns.length === 1 && out[i + 1]?.notes.length === 1) { setPair(ns[0], out[i + 1].notes[0]); i += 1; }
+    else ns.forEach((n) => { n.finger = n.f === 0 ? 0 : 1; });
+  }
+  return out;
 }
 
 export function exerciseById(id) {
@@ -730,6 +752,7 @@ export function buildExercise(id, o) {
     noteCount: beats.reduce((n, b) => n + b.notes.length, 0),
     rows: result.rows ?? null,
     beatRow: result.beatRow ?? null,
+    positions: result.positions ?? null,
   };
 }
 

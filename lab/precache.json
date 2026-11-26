@@ -29,6 +29,7 @@
   "./js/core/earplay.js",
   "./js/core/exercises.js",
   "./js/core/exlib.js",
+  "./js/core/fingers.js",
   "./js/core/guide.js",
   "./js/core/harmony.js",
   "./js/core/heatmap.js",

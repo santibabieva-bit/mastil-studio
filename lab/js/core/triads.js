@@ -7,6 +7,7 @@
 import { mod } from './music.js';
 import { CHORD_TYPES, chordPcs, stringSetVoicings } from './chords.js';
 import { chordTones, scalePcs } from './jam.js';
+import { withFingers } from './fingers.js';
 
 export const INVERSION_LABELS = ['Fundamental', '1.ª inversión', '2.ª inversión', '3.ª inversión'];
 
@@ -124,40 +125,52 @@ export function overlayChords(a, b) {
   };
 }
 
+/** Ventanas de las formas CAGED: cuerda de la tónica (0 = la más grave) y trastes por debajo/encima. */
+const CAGED_WINDOWS = {
+  C: { rootString: 1, below: 3, above: 1 },
+  A: { rootString: 1, below: 1, above: 3 },
+  G: { rootString: 0, below: 3, above: 1 },
+  E: { rootString: 0, below: 1, above: 3 },
+  D: { rootString: 2, below: 1, above: 3 },
+};
+const CAGED_IDS = ['C', 'A', 'G', 'E', 'D'];
+
 /**
- * Posiciones de un arpegio/acorde: ventanas de `width` trastes alrededor de
- * cada tónica en las cuerdas graves. Cada nota lleva el dedo recomendado
- * (1 = índice… 4 = meñique, un dedo por traste de la ventana).
+ * Posiciones de un arpegio/acorde: las cinco formas CAGED (ventana de 4–5
+ * trastes alrededor de la tónica), de la más grave a la más aguda. Cada nota
+ * lleva el dedo estándar de la posición (un dedo por traste; si la forma
+ * ocupa cinco trastes, se reparte sin estirar o con un único estiramiento).
  */
-export function arpeggioPositions({ tuning, rootPc, typeId, width = 5, maxFret = 15 }) {
+export function arpeggioPositions({ tuning, rootPc, typeId, maxFret = 15 }) {
   const pcs = chordPcs(rootPc, typeId);
   const tones = chordTones(rootPc, typeId);
   const labelOf = new Map(tones.map((t) => [t.pc, t]));
-  const seen = new Set();
+  const low = tuning.length - 1;
   const positions = [];
-  for (let from = 0; from + width - 1 <= maxFret + 0; from += 1) {
-    const to = from + width - 1;
-    const notes = [];
-    for (let s = 0; s < tuning.length; s += 1) {
-      for (let f = from; f <= to; f += 1) {
-        const pc = mod(tuning[s] + f, 12);
-        if (!pcs.includes(pc)) continue;
-        const tone = labelOf.get(pc);
-        notes.push({ s, f, pc, midi: tuning[s] + f, finger: f === 0 ? 0 : Math.min(4, f - from + 1), role: tone.role, label: tone.label });
+  for (const id of CAGED_IDS) {
+    const def = CAGED_WINDOWS[id];
+    const s = Math.max(0, low - def.rootString);
+    let r = mod(rootPc - tuning[s], 12);
+    if (r - def.below < -1) r += 12;
+    for (const root of [r, r + 12]) {
+      const from = Math.max(0, root - def.below);
+      const to = root + def.above;
+      if (to > maxFret) continue;
+      const notes = [];
+      for (let str = 0; str < tuning.length; str += 1) {
+        for (let f = from; f <= to; f += 1) {
+          const pc = mod(tuning[str] + f, 12);
+          if (!pcs.includes(pc)) continue;
+          const tone = labelOf.get(pc);
+          notes.push({ s: str, f, pc, midi: tuning[str] + f, role: tone.role, label: tone.label });
+        }
       }
+      if (new Set(notes.map((n) => n.s)).size < tuning.length - 1) continue;
+      positions.push({ id, from, to, notes: withFingers(notes) });
+      break;
     }
-    const strings = new Set(notes.map((n) => n.s));
-    if (strings.size < tuning.length) continue;
-    const key = notes.map((n) => `${n.s}-${n.f}`).join('|');
-    if (seen.has(key)) continue;
-    // Ventanas sin tónica no son posiciones útiles para estudiar.
-    if (!notes.some((n) => n.pc === rootPc)) continue;
-    seen.add(key);
-    positions.push({ from, to, notes });
   }
-  // Quita ventanas contenidas en otra (conserva la más centrada).
-  return positions.filter((p, i) => !positions.some((q, j) => j !== i && q.notes.length > p.notes.length
-    && p.notes.every((n) => q.notes.some((m) => m.s === n.s && m.f === n.f)) && q.from <= p.from + 1));
+  return positions.sort((a, b) => a.from - b.from);
 }
 
 /** Nombre CAGED aproximado de una posición según la cuerda de la tónica grave. */

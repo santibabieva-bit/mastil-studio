@@ -41,25 +41,39 @@ export const totalBeats = (steps) => steps.reduce((a, st) => a + (st.d ?? 1), 0)
  * @returns [{ from, to, shift }]
  */
 export function handPositions(steps, span = 4) {
-  let from = null;
-  return steps.map((st) => {
-    const fretted = st.notes.filter((n) => n.f > 0);
-    if (!fretted.length) return { from: from ?? 1, to: (from ?? 1) + span - 1, shift: false };
-    const lo = Math.min(...fretted.map((n) => n.f));
-    const hi = Math.max(...fretted.map((n) => n.f));
-    let shift = false;
-    if (from == null || lo < from || hi > from + span - 1) {
-      const withFinger = fretted.find((n) => n.finger >= 1 && n.finger <= 4);
-      let next;
-      if (withFinger) next = withFinger.f - (withFinger.finger - 1);
-      else if (from == null || lo < from) next = lo;
-      else next = hi - span + 1;
-      shift = from != null && next !== from;
-      from = Math.max(1, Math.min(next, lo));
-      if (hi > from + span - 1) from = Math.max(1, hi - span + 1);
+  // Se agrupan los pasos en tramos que caben en una ventana de `span` trastes,
+  // mirando hacia delante: la ventana de cada tramo la fija su traste más bajo
+  // (o el dedo que traiga una nota), no la primera nota que suena.
+  const frettedOf = (st) => st.notes.filter((n) => n.f > 0);
+  const out = new Array(steps.length);
+  let i = 0;
+  let prevFrom = null;
+  while (i < steps.length) {
+    let lo = Infinity;
+    let hi = -Infinity;
+    let anchor = null;
+    let j = i;
+    for (; j < steps.length; j += 1) {
+      const fr = frettedOf(steps[j]);
+      if (!fr.length) continue;
+      const nlo = Math.min(lo, ...fr.map((n) => n.f));
+      const nhi = Math.max(hi, ...fr.map((n) => n.f));
+      if (nhi - nlo > span - 1 && lo !== Infinity) break;
+      lo = nlo;
+      hi = nhi;
+      anchor ??= fr.find((n) => n.finger >= 1 && n.finger <= 4) ?? null;
     }
-    return { from, to: from + span - 1, shift };
-  });
+    let from = lo === Infinity ? (prevFrom ?? 1) : lo;
+    if (anchor) {
+      const want = anchor.f - (anchor.finger - 1);
+      if (want <= lo && want + span - 1 >= hi) from = want;
+    }
+    from = Math.max(1, from);
+    for (let k = i; k < Math.max(j, i + 1); k += 1) out[k] = { from, to: from + span - 1, shift: k === i && prevFrom != null && from !== prevFrom };
+    prevFrom = from;
+    i = Math.max(j, i + 1);
+  }
+  return out;
 }
 
 /** Dedo para una nota dentro de una ventana (0 = al aire). */

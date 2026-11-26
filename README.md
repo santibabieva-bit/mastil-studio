@@ -96,7 +96,8 @@ Abrir `http://127.0.0.1:4173`.
 No hay dependencias de runtime ni proceso de build: el servidor sólo sirve archivos estáticos y el navegador ejecuta módulos ES.
 
 ```bash
-npm test       # 235 pruebas: teoría, parser, CAGED, voicings, digitaciones, SVG y el núcleo del Lab (jam, tríadas, MIDI, repaso espaciado, rutinas, biblioteca de ejercicios, alphaTex, mapa del mástil y movimiento: digitaciones, rutas, intervalos, modos, tensiones y variaciones, y los ejercicios de tríadas)
+node scripts/fingering-report.mjs A   # todas las digitaciones del Lab, para revisarlas
+npm test       # 248 pruebas: teoría, parser, CAGED, voicings, digitaciones, SVG y el núcleo del Lab (jam, tríadas, MIDI, repaso espaciado, rutinas, biblioteca de ejercicios, alphaTex, mapa del mástil y movimiento: digitaciones, rutas, intervalos, modos, tensiones y variaciones, y los ejercicios de tríadas)
 npm run precache  # regenera lab/precache.json (lista del modo sin conexión) tras añadir archivos al Lab
 npm run export # regenera los SVG de ejemplo en output/
 ```
