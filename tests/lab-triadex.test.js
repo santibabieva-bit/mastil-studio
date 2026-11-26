@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   PROGRESSIONS, SETS, STD, TRIAD_EXERCISES, buildTriadExercise, cagedWindows, checkDrill, diatonic, drillQuestion,
-  earQuestion, inversionLadder, keyPcs, matchVoices, passingFrets, recordDrill, spreadVoicing, stepsToBeats, voiceMoves,
+  earQuestion, inversionLadder, keyPcs, matchVoices, passingFrets, scaleDegree, recordDrill, spreadVoicing, stepsToBeats, voiceMoves,
 } from '../lab/js/core/triadex.js';
 import { chordPcs } from '../lab/js/core/chords.js';
 import { makeRng, mod } from '../lab/js/core/music.js';
@@ -196,4 +196,16 @@ test('partitura: los pasos se convierten en figuras con ligaduras en la barra y 
   assert.equal(tied[3].notes[0].tie, true);
   const pairs = stepsToBeats(buildTriadExercise('pairs', { keyPc: 0 }).steps).beats;
   assert.ok(pairs.every((b) => b.tuplet && b.dur === 8));
+});
+
+test('grado en la escala: las notas de cada tríada según la tonalidad', () => {
+  // Re menor en Do mayor: 2, 4, 6. Si disminuido: 7, 2, 4.
+  assert.deepEqual([62, 65, 69].map((m) => scaleDegree(m, 0)), ['2', '4', '6']);
+  assert.deepEqual([71, 74, 77].map((m) => scaleDegree(m, 0, { rootPc: 11, typeId: 'dim' })), ['7', '2', '4']);
+  // En Sol mayor, el Fa♯ es el 7.
+  assert.equal(scaleDegree(66, 7), '7');
+  // Do aumentado: Sol♯ es ♯5; Do disminuido: Sol♭ es ♭5; Do menor: Mi♭ es ♭3.
+  assert.equal(scaleDegree(68, 0, { rootPc: 0, typeId: 'aug' }), '♯5');
+  assert.equal(scaleDegree(66, 0, { rootPc: 0, typeId: 'dim' }), '♭5');
+  assert.equal(scaleDegree(63, 0, { rootPc: 0, typeId: 'm' }), '♭3');
 });

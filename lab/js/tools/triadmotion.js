@@ -10,7 +10,7 @@ import { CAGED_COLORS } from '../core/exlib.js';
 import {
   INVERSION_LABELS, PROGRESSIONS, QUALITIES, QUALITY_LABEL, ROLE_LABEL, SETS, TRIAD_EXERCISES, TRIAD_FAMILIES,
   buildTriadExercise, cagedWindows, checkDrill, chordStep, describeStep, diatonic, drillQuestion, earQuestion,
-  recordDrill, setName, stepsToBeats, triadExercise, voiceMoves,
+  recordDrill, scaleDegree, setName, stepsToBeats, triadExercise, voiceMoves,
 } from '../core/triadex.js';
 import { beatsToAlphaTex } from '../core/alphatex.js';
 import { COLORS, createAnimBoard, createPlayer, noteName } from '../ui/animboard.js';
@@ -130,8 +130,10 @@ function mount(root, ctx) {
     }
   }
 
-  function labelOf(n) {
+  function labelOf(n, i) {
     if (st.labels === 'role') return n.role === 'pass' ? '' : ROLE_LABEL[n.role] ?? '';
+    // Grado en la escala mayor de la tonalidad elegida (no en la tríada).
+    if (st.labels === 'degree') return scaleDegree(n.midi, keyPc(), steps[i]?.chord);
     if (st.labels === 'name') return noteName(n.midi);
     return '';
   }
@@ -443,7 +445,7 @@ function mount(root, ctx) {
     h('summary', {}, 'Sonido y animación'),
     h('div', { class: 'stack' },
       h('div', { class: 'field' }, h('label', {}, 'Cómo suena el acorde'), segmented([{ value: 'block', label: 'Plaqué' }, { value: 'strum', label: 'Rasgueo' }, { value: 'arp', label: 'Arpegio' }], st.style, (v) => { st.style = v; save(); load(); })),
-      h('div', { class: 'field' }, h('label', {}, 'Etiquetas'), segmented([{ value: 'role', label: 'R 3 5' }, { value: 'name', label: 'Notas' }, { value: 'none', label: 'Nada' }], st.labels, (v) => { st.labels = v; save(); player.setOptions({ labels: labelOf }); })),
+      h('div', { class: 'field' }, h('label', {}, 'Etiquetas'), segmented([{ value: 'role', label: 'R 3 5' }, { value: 'degree', label: 'Grado (escala)' }, { value: 'name', label: 'Notas' }, { value: 'none', label: 'Nada' }], st.labels, (v) => { st.labels = v; save(); player.setOptions({ labels: labelOf }); })),
       toggle('Ver la forma siguiente', st.next, (v) => { st.next = v; save(); player.setOptions({ next: v }); }),
       toggle('Flechas de las voces que se mueven', st.arrows, (v) => { st.arrows = v; save(); }),
       toggle('Bajo con la tónica', st.bass, (v) => { st.bass = v; save(); load(); }),

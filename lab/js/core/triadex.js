@@ -67,6 +67,22 @@ export function roleOf(midi, rootPc) {
 }
 export const ROLE_LABEL = { root: 'R', third: '3', fifth: '5', other: '·' };
 
+const DEGREE_NAMES = ['1', '♭2', '2', '♭3', '3', '4', '♯4', '5', '♭6', '6', '♭7', '7'];
+
+/**
+ * Grado de una nota en la escala mayor de la tonalidad (1–7, con ♭/♯ si no
+ * pertenece). La 5.ª de un acorde aumentado se escribe ♯5 y la de uno
+ * disminuido ♭5 (cuando no caen en la escala).
+ */
+export function scaleDegree(midi, keyPc, chord = null) {
+  const iv = mod(midi - keyPc, 12);
+  if (chord && roleOf(midi, chord.rootPc) === 'fifth' && !MAJOR.includes(iv)) {
+    if (chord.typeId === 'aug') return `♯${DEGREE_NAMES[mod(iv - 1, 12)]}`;
+    if (chord.typeId === 'dim') return `♭${DEGREE_NAMES[mod(iv + 1, 12)]}`;
+  }
+  return DEGREE_NAMES[iv];
+}
+
 export const avgFret = (v) => v.notes.reduce((a, n) => a + n.f, 0) / v.notes.length;
 
 /** Notas del voicing ordenadas de grave a agudo, con altura, función y voz (0 = grave). */
