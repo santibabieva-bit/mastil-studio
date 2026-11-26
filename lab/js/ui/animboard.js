@@ -12,6 +12,7 @@ import {
 } from '../core/motion.js';
 import { chordPcs } from '../core/chords.js';
 import { degreeOf, roleOf } from './labels.js';
+import { bendAmountLabel, bendAt, bendPoints } from '../core/bends.js';
 import { h } from './dom.js';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -50,6 +51,18 @@ export function createAnimBoard({ tuning, from = 0, to = 12, title = 'Mástil an
   const r = geo.radius;
   const pos = (s, f) => geo.at(s, Math.max(geo.from, Math.min(geo.to, f)));
   const visible = (f) => f >= geo.from && f <= geo.to;
+
+  // Cuerdas como trazos editables: un bend las curva de verdad.
+  const stringPaths = [...svg.querySelectorAll('line[data-string]')].map((line) => {
+    const x1 = Number(line.getAttribute('x1'));
+    const x2 = Number(line.getAttribute('x2'));
+    const y = Number(line.getAttribute('y1'));
+    const path = el('path', { d: `M${x1} ${y} L${x2} ${y}`, fill: 'none', stroke: line.getAttribute('stroke'), 'stroke-width': line.getAttribute('stroke-width'), 'stroke-linecap': 'round', 'data-string': line.dataset.string });
+    line.replaceWith(path);
+    return { path, x1, x2, y, base: line.getAttribute('stroke') };
+  });
+  const straight = (sp) => `M${sp.x1} ${sp.y} L${sp.x2} ${sp.y}`;
+  const bent = new Map(); // s → f
 
   function place(node, x, y) {
     node.style.transform = `translate(${x}px, ${y}px)`;
@@ -309,6 +322,76 @@ export function createAnimBoard({ tuning, from = 0, to = 12, title = 'Mástil an
 
     clearBend() { layer.fx.querySelector('[data-bend]')?.remove(); },
 
+    /**
+     * Estira la cuerda s en el traste f `semis` semitonos: la cuerda se curva
+     * hacia las graves (en las dos más graves, hacia las agudas), empuja a la
+     * vecina si llega a ella y la nota pisada viaja con la cuerda.
+     */
+    bendString(s, f, semis, { color = COLORS.accent, label = null } = {}) {
+      const str = stringPaths[s];
+      if (!str || !visible(f)) return;
+      const { x, y } = pos(s, f);
+      const dir = s >= geo.strings - 2 ? -1 : 1;
+      const off = dir * Math.max(0, semis) * geo.gap * 0.42;
+      const shape = (sp, dy, tint) => {
+        if (Math.abs(dy) < 0.3) { sp.path.setAttribute('d', straight(sp)); sp.path.setAttribute('stroke', sp.base); return; }
+        // La cuerda se tensa en V alrededor del dedo (unos dos trastes a cada lado).
+        const fw = Math.abs(geo.xWire(Math.max(geo.lo + 1, f)) - geo.xWire(Math.max(geo.lo, f - 1))) || geo.gap * 2;
+        const xa = Math.max(Math.min(sp.x1, sp.x2), x - fw * 2.2);
+        const xb = Math.min(Math.max(sp.x1, sp.x2), x + fw * 2.2);
+        const py = sp.y + dy;
+        const k = 9;
+        const ya = py - (dy * k) / Math.max(1, x - xa);
+        const yb = py - (dy * k) / Math.max(1, xb - x);
+        sp.path.setAttribute('d', `M${sp.x1} ${sp.y} L${xa.toFixed(1)} ${sp.y} L${(x - k).toFixed(1)} ${ya.toFixed(1)} Q${x.toFixed(1)} ${py.toFixed(1)} ${(x + k).toFixed(1)} ${yb.toFixed(1)} L${xb.toFixed(1)} ${sp.y} L${sp.x2} ${sp.y}`);
+        sp.path.setAttribute('stroke', tint);
+      };
+      shape(str, off, color);
+      // La cuerda vecina se aparta cuando la estirada llega a ella.
+      const near = stringPaths[s + dir];
+      const push = Math.abs(off) - geo.gap * 0.78;
+      if (near && !bent.has(s + dir)) shape(near, push > 0 ? dir * push : 0, '#8a8272');
+      bent.set(s, f);
+      // La nota (y su estela) se mueve con la cuerda, sin transición de deslizamiento.
+      for (const g of keyed.notes.values()) {
+        if (g.dataset.pos !== `${s}-${f}`) continue;
+        g.style.transition = 'opacity .3s ease';
+        place(g, x, y + off);
+      }
+      let tag = layer.fx.querySelector(`[data-bend-tag="${s}"]`);
+      if (!tag) {
+        tag = el('g', { 'data-bend-tag': String(s) });
+        tag.append(el('path', { fill: 'none', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }), el('text', { 'font-size': 13, 'font-weight': 800 }));
+        layer.fx.append(tag);
+      }
+      const [arrow, text] = tag.children;
+      const tx = x + r * 1.35;
+      const ty = y + off;
+      const sgn = Math.sign(off) || 1;
+      arrow.setAttribute('d', `M${tx.toFixed(1)} ${y} L${tx.toFixed(1)} ${ty.toFixed(1)} M${(tx - 4).toFixed(1)} ${(ty - sgn * 5).toFixed(1)} L${tx.toFixed(1)} ${ty.toFixed(1)} L${(tx + 4).toFixed(1)} ${(ty - sgn * 5).toFixed(1)}`);
+      arrow.setAttribute('stroke', color);
+      arrow.style.display = Math.abs(off) > 6 ? '' : 'none';
+      text.setAttribute('x', (tx + 7).toFixed(1));
+      text.setAttribute('y', ((y + ty) / 2 + 4).toFixed(1));
+      text.setAttribute('fill', color);
+      text.textContent = label ?? bendAmountLabel(semis);
+    },
+
+    /** Todas las cuerdas rectas y las notas en su sitio. */
+    releaseStrings() {
+      for (const sp of stringPaths) if (sp.path.getAttribute('d') !== straight(sp)) { sp.path.setAttribute('d', straight(sp)); sp.path.setAttribute('stroke', sp.base); }
+      for (const [s, f] of bent) {
+        for (const g of keyed.notes.values()) {
+          if (g.dataset.pos !== `${s}-${f}`) continue;
+          g.style.transition = '';
+          const p = pos(s, f);
+          place(g, p.x, p.y);
+        }
+      }
+      bent.clear();
+      layer.fx.querySelectorAll('[data-bend-tag]').forEach((t) => t.remove());
+    },
+
     onClick(cb) {
       wrap.addEventListener('click', (e) => { const hit = hitFromEvent(e); if (hit) cb(hit, e); });
     },
@@ -387,6 +470,32 @@ export function createPlayer(board, engine, { onStep = null, onEnd = null } = {}
   let bpm = 80;
   let loop = false;
   let current = -1;
+  let bendRaf = 0;
+  let previewing = false;
+
+  /**
+   * Anima los bends del paso i: la cuerda sube (y baja, si hay release) con la
+   * misma curva que el sonido. Parado, se ve el punto más alto del bend.
+   */
+  function animateBends(i, live) {
+    cancelAnimationFrame(bendRaf);
+    board.releaseStrings?.();
+    const st = steps[i];
+    const list = (st?.notes ?? []).filter((n) => bendPoints(n.bend));
+    if (!list.length || !board.bendString) return;
+    const color = (n) => opts.colorOf?.(n, i) ?? COLORS.accent;
+    const peak = (n) => Math.max(...bendPoints(n.bend));
+    if (!live || reduceMotion()) { for (const n of list) board.bendString(n.s, n.f, peak(n), { color: color(n), label: bendAmountLabel(peak(n)) }); return; }
+    const dur = ((st.d ?? 1) * 60 * 1000) / bpm;
+    const t0 = performance.now();
+    const frame = () => {
+      if (current !== i) return;
+      const t = Math.min(1, (performance.now() - t0) / dur);
+      for (const n of list) board.bendString(n.s, n.f, bendAt(n.bend, t), { color: color(n), label: bendAmountLabel(peak(n)) });
+      if (t < 1) bendRaf = requestAnimationFrame(frame);
+    };
+    frame();
+  }
 
   // Etiquetas comunes: role (R 3 5, con el acorde del paso), degree (con
   // opts.tonicPc), name, finger (el que trae la nota o el de la mano) y none.
@@ -458,6 +567,7 @@ export function createPlayer(board, engine, { onStep = null, onEnd = null } = {}
       const nextBar = steps.map((s, k) => ({ s, k })).filter(({ k }) => Math.floor(times[k] / 4) === bar + 1);
       board.dots(nextBar.flatMap(({ s }) => s.notes.map((n) => ({ key: `p-${n.s}-${n.f}`, s: n.s, f: n.f, label: '', fill: COLORS.seventh, alpha: 0.28, scale: 0.7 }))), 'preview');
     } else board.clear('preview');
+    animateBends(i, playing || previewing);
     if (opts.pickView) {
       const n = st.notes[0];
       if (n) opts.pickView.show(n.pick ?? null, n.pick ? crossingType(steps[i - 1]?.notes[0], n) : (n.art === 'H' || n.art === 'P' ? 'legato' : null));
@@ -480,7 +590,7 @@ export function createPlayer(board, engine, { onStep = null, onEnd = null } = {}
       const gap = st.arp && sounding.length > 1 ? ((st.d ?? 1) * spb) / sounding.length : 0;
       sounding.forEach((n, k) => {
         const midi = n.midi ?? board.tuning[n.s] + n.f;
-        engine.pluck(midi, t + k * gap, { dur: Math.max(0.25, (st.d ?? 1) * spb * 1.3 - k * gap), vel: n.art === 'H' || n.art === 'P' ? 0.6 : (n.vel ?? 0.82), legato: n.art === 'H' || n.art === 'P' || n.art === 'S' });
+        engine.pluck(midi, t + k * gap, { dur: Math.max(0.25, (st.d ?? 1) * spb * 1.3 - k * gap), vel: n.art === 'H' || n.art === 'P' ? 0.6 : (n.vel ?? 0.82), legato: n.art === 'H' || n.art === 'P' || n.art === 'S', bend: bendPoints(n.bend) ?? 0, bendSpan: (st.d ?? 1) * spb, vibrato: !!n.vib });
       });
       if (opts.click) engine.click(t, { accent: Math.abs(times[i] % 4) < 1e-6, sound: 'click', vol: 0.45 });
       engine.at(t, () => render(i));
@@ -511,6 +621,8 @@ export function createPlayer(board, engine, { onStep = null, onEnd = null } = {}
       board.clearArrows();
       board.fingers(null);
       board.hand(null);
+      cancelAnimationFrame(bendRaf);
+      board.releaseStrings?.();
     },
     setOptions(o) { opts = { ...opts, ...o }; if (current >= 0) render(current); },
     get steps() { return steps; },
@@ -544,9 +656,11 @@ export function createPlayer(board, engine, { onStep = null, onEnd = null } = {}
       if (sound) {
         await engine.ensure();
         if (steps[k].strum) engine.strum(steps[k].strum, engine.time + 0.02, { dur: 1.2, vel: 0.55 });
-        for (const n of (steps[k].silent ? [] : steps[k].notes.filter((x) => !x.held))) engine.pluck(n.midi ?? board.tuning[n.s] + n.f, engine.time + 0.02, { dur: 0.8 });
+        for (const n of (steps[k].silent ? [] : steps[k].notes.filter((x) => !x.held))) engine.pluck(n.midi ?? board.tuning[n.s] + n.f, engine.time + 0.02, { dur: 0.9, bend: bendPoints(n.bend) ?? 0, bendSpan: (steps[k].d ?? 1) * (60 / bpm) });
       }
+      previewing = sound;
       render(k);
+      previewing = false;
     },
     render,
   };

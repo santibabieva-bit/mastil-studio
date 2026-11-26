@@ -7,6 +7,7 @@
 
 import { midiToFreq } from '../core/music.js';
 import { synthPluck } from './pluck.js';
+import { bendKeyframes } from '../core/bends.js';
 
 const BUSES = ['guitar', 'drums', 'bass', 'synth', 'click', 'misc'];
 
@@ -165,7 +166,13 @@ export class AudioEngine {
     }
     gain.gain.setValueAtTime(level, time + Math.max(0.01, hold));
     gain.gain.exponentialRampToValueAtTime(0.0005, time + hold + (mute ? 0.04 : 0.25));
-    if (bend) {
+    if (Array.isArray(bend)) {
+      // Curva completa (bend, release, pre-bend): la misma que dibuja el mástil.
+      const keys = bendKeyframes(bend);
+      const span = Math.max(0.12, o.bendSpan ?? hold);
+      source.playbackRate.setValueAtTime(2 ** (keys[0].v / 12), time);
+      for (const k of keys.slice(1)) source.playbackRate.linearRampToValueAtTime(2 ** (k.v / 12), time + k.t * span);
+    } else if (bend) {
       source.playbackRate.setValueAtTime(1, time);
       source.playbackRate.linearRampToValueAtTime(2 ** (bend / 12), time + Math.min(0.25, hold * 0.6));
     }

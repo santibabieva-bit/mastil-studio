@@ -111,7 +111,7 @@ function mount(root, ctx) {
       const lick = [...BUILTIN_LICKS, ...custom].find((l) => l.id === cfg.lick) ?? BUILTIN_LICKS[0];
       title = lick.name;
       const sub = lick.subdivision ?? 2;
-      list = toSteps(lick.notes.map((n) => [n[0], n[1], (n[2] ?? 1) / sub]), tuning);
+      list = toSteps(lick.notes.map((n) => ({ s: n[0], f: n[1], d: (n[2] ?? 1) / sub, bend: n[3]?.bend ?? null, vib: !!n[3]?.vib })), tuning);
       list = withPicking(list);
     } else if (cfg.source === 'guide') {
       const preset = jamPreset(cfg.prog);
@@ -166,7 +166,7 @@ function mount(root, ctx) {
       title = tab ? tab.title : '';
       if (tab) {
         const sub = tab.subdivision ?? 2;
-        list = tabEvents(tab).map((ev) => ({ notes: ev.notes.filter((n) => n.fret != null || n.f != null).map((n) => { const f = n.fret ?? n.f; return { s: n.s, f, midi: tuning[n.s] + f, art: n.legato ? 'H' : null }; }), d: 1 / sub }));
+        list = tabEvents(tab).map((ev) => ({ notes: ev.notes.filter((n) => n.fret != null || n.f != null).map((n) => { const f = n.fret ?? n.f; return { s: n.s, f, midi: tuning[n.s] + f, art: n.legato ? 'H' : null, bend: n.bend ? (n.tech.includes('r') ? [0, 2, 0] : [0, 2]) : null, vib: !!n.vibrato }; }), d: 1 / sub }));
         // Quita los silencios del final.
         while (list.length && !list[list.length - 1].notes.length) list.pop();
         list = withPicking(list);

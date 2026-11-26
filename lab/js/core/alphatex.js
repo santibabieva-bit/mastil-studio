@@ -8,6 +8,7 @@
  *   dur: 4 negra · 8 corchea · 16 semicorchea · 32 fusa (por defecto la general).
  */
 
+import { bendTex } from './bends.js';
 import { TUNINGS } from './music.js';
 import { createTab, parseCell, tabLength } from './tab.js';
 
@@ -59,7 +60,10 @@ const RIGHT_FINGER = { p: 1, i: 2, m: 3, a: 4 };
 function noteEffectList(note, { showFingers }) {
   const fx = [];
   if (note.tie) fx.push('t');
+  const curve = bendTex(note.bend);
+  if (curve) fx.push(curve);
   for (const tech of note.tech ?? []) {
+    if (curve && (tech === 'b' || tech === 'r')) continue;
     if (tech === 'h' || tech === 'p') fx.push('h');
     else if (tech === '/' || tech === '\\') fx.push('sl');
     else if (tech === 'b') fx.push('b (0 4)');
@@ -196,10 +200,10 @@ export function eventsToBeats(events) {
 export function lickToBeats(lick) {
   const sub = lick.subdivision ?? 2;
   const unit = { 1: 4, 2: 8, 4: 16 }[sub] ?? 8;
-  return lick.notes.map(([s, f, steps = 1]) => {
+  return lick.notes.map(([s, f, steps = 1, fx = null]) => {
     const table = { 1: [unit, false], 2: [unit / 2, false], 3: [unit / 2, true], 4: [unit / 4, false], 6: [unit / 4, true], 8: [unit / 8, false] };
     const [dur, dot] = table[steps] ?? [unit, false];
-    return { notes: [{ s, f, tech: [] }], dur: Math.max(1, dur), dot };
+    return { notes: [{ s, f, tech: fx?.vib ? ['~'] : [], bend: fx?.bend ?? null }], dur: Math.max(1, dur), dot };
   });
 }
 

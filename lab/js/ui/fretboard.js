@@ -148,7 +148,7 @@ export function renderFretboard(o) {
     const thickness = 1 + (s / Math.max(1, strings - 1)) * 2.8;
     const x1 = mirror(showOpen ? xWire(0) : leftMargin);
     const x2 = mirror(leftMargin + boardW);
-    parts.push(`<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${COLORS.string}" stroke-width="${thickness.toFixed(2)}" stroke-linecap="round"/>`);
+    parts.push(`<line data-string="${s}" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${COLORS.string}" stroke-width="${thickness.toFixed(2)}" stroke-linecap="round"/>`);
     if (stringNames) {
       const letter = strings === 6 ? STRING_LETTERS_STANDARD[s] : midiName(tuning[s]).replace(/\d+$/, '');
       const lx = lefty ? width - 12 : 14;

@@ -5,8 +5,11 @@
 
 import { TUNINGS, midiName, pcName, prettyNote } from '../core/music.js';
 import {
-  BUILTIN_LICKS, collapseNotes, lickInAllKeys, lickToText, matchLick, parseLick,
+  BUILTIN_LICKS, collapseNotes, lickInAllKeys, lickTargets, lickToText, matchLick, parseLick,
 } from '../core/licks.js';
+import { bendLabel, bendPoints } from '../core/bends.js';
+import { toSteps } from '../core/motion.js';
+import { COLORS, createAnimBoard, createPlayer } from '../ui/animboard.js';
 import { detectPitch } from '../core/pitch.js';
 import { Transport } from '../audio/transport.js';
 import { beatsToAlphaTex, lickToBeats } from '../core/alphatex.js';
@@ -41,6 +44,40 @@ function mount(root, ctx) {
   const scoreHost = h('div');
   const lickScore = createScore(scoreHost, { stave: 'tab', cursor: false });
   ctx.onCleanup(() => lickScore.destroy());
+  // Mástil animado: las cuerdas se doblan en los bends al ritmo del sonido.
+  const boardHost = h('div', { class: 'fretboard-wrap', style: 'overflow-x:auto' });
+  const bendInfo = h('div', { class: 'tempo-name', style: 'text-align:center;min-height:1.4em' }, '');
+  let board = null;
+  let player = null;
+  let boardSig = '';
+  const lickSteps = (lick) => {
+    const sub = lick.subdivision ?? 2;
+    return toSteps(lick.notes.map(([s, f, d = 1, fx]) => ({ s, f, d: d / sub, bend: fx?.bend ?? null, vib: !!fx?.vib })), tuning);
+  };
+  function drawBoard(lick) {
+    const frets = lick.notes.map((n) => n[1]);
+    const from = Math.max(0, Math.min(...frets) - 2);
+    const to = Math.max(from + 7, Math.max(...frets) + 2);
+    const sig = `${from}-${to}`;
+    if (!board || sig !== boardSig) {
+      player?.stop();
+      board = createAnimBoard({ tuning, from, to, width: 700, title: `Mástil: ${lick.name}` });
+      player = createPlayer(board, engine, {
+        onStep: (i, st) => {
+          lickScore.highlightBeat?.(i);
+          const n = st.notes.find((x) => bendPoints(x.bend));
+          bendInfo.textContent = n ? `↑ ${bendLabel(n.bend)} en la cuerda ${n.s + 1}, traste ${n.f}` : '';
+        },
+        onEnd: () => { bendInfo.textContent = ''; },
+      });
+      boardHost.replaceChildren(board.el);
+      boardSig = sig;
+    }
+    player.load(lickSteps(lick), { trail: 4, hand: true, arrows: true, labels: 'name', colorOf: (n) => (bendPoints(n.bend) ? COLORS.root : COLORS.accent) });
+    const first = lick.notes.findIndex((n) => n[3]?.bend);
+    player.show(Math.max(0, first));
+  }
+  ctx.onCleanup(() => player?.stop());
   const keyGrid = h('div', { class: 'key-grid' });
   const status = h('div', { class: 'feedback', hidden: true });
   const phase = h('div', { class: 'tempo-name', style: 'text-align:center;min-height:1.4em' }, '');
@@ -79,10 +116,9 @@ function mount(root, ctx) {
   async function previewKey() {
     await engine.ensure();
     const k = keys()[cfg.index]?.lick;
-    if (!k) return;
-    let t = engine.time + 0.05;
-    const step = 60 / cfg.bpm / (k.subdivision ?? 2);
-    for (const [s, f, d = 1] of k.notes) { engine.pluck(tuning[s] + f, t, { dur: step * d * 1.8, vel: 0.85 }); t += step * d; }
+    if (!k || !player) return;
+    transport.stop();
+    player.play({ tempo: cfg.bpm });
   }
 
   /** Línea de tiempo completa: por cada tonalidad, la llamada y el hueco para responder. */
@@ -92,7 +128,7 @@ function mount(root, ctx) {
       if (!k.lick) return;
       const sub = k.lick.subdivision ?? 2;
       const total = stepsOf(k.lick);
-      const expected = k.lick.notes.map(([s, f]) => tuning[s] + f);
+      const expected = lickTargets(k.lick, tuning);
       const starts = new Map();
       let acc = 0;
       for (const n of k.lick.notes) { starts.set(acc, n); acc += n[2] ?? 1; }
@@ -114,8 +150,8 @@ function mount(root, ctx) {
         if (!slot) return false;
         const dur = 60 / cfg.bpm / slot.sub;
         if (slot.kind === 'call') {
-          if (slot.first) engine.at(time, () => { cfg.index = slot.idx; drawKeys(); phase.textContent = `Escucha — ${prettyNote(pcName(list[slot.idx].rootPc, 'sharp'))}`; });
-          if (slot.note) engine.pluck(tuning[slot.note[0]] + slot.note[1], time, { dur: dur * (slot.note[2] ?? 1) * 1.8, vel: 0.85 });
+          if (slot.first) engine.at(time, () => { cfg.index = slot.idx; drawKeys(); drawBoard(list[slot.idx].lick); phase.textContent = `Escucha — ${prettyNote(pcName(list[slot.idx].rootPc, 'sharp'))}`; });
+          if (slot.note) engine.pluck(tuning[slot.note[0]] + slot.note[1], time, { dur: dur * (slot.note[2] ?? 1) * 1.8, vel: 0.85, bend: bendPoints(slot.note[3]?.bend) ?? 0, bendSpan: dur * (slot.note[2] ?? 1), vibrato: !!slot.note[3]?.vib });
         } else {
           if (slot.first) engine.at(time, () => { phase.textContent = 'Tu turno'; if (cfg.mic) startListening(); });
           if (slot.local % slot.sub === 0) engine.click(time, { accent: slot.local === 0, sound: 'click', vol: 0.4 });
@@ -162,7 +198,9 @@ function mount(root, ctx) {
         h('p', { class: 'hint' }, `En ${prettyNote(pcName(shown.rootPc, 'sharp'))}: ${lickToText(shown.notes)} (cuerda:traste; 1 = cuerda más aguda).`),
         scoreToolbar(lickScore, { playback: false, stave: true }),
         scoreHost,
-        h('div', { class: 'row' }, button('🔊 Oír esta tonalidad', { variant: 'outline', onClick: previewKey })),
+        boardHost,
+        bendInfo,
+        h('div', { class: 'row', style: 'justify-content:center' }, button('▶ Ver y oír esta tonalidad', { variant: 'outline', onClick: previewKey })),
         h('h2', {}, 'Las 12 tonalidades'),
         keyGrid,
       ),
@@ -183,10 +221,11 @@ function mount(root, ctx) {
         ),
         h('div', { class: 'field' }, h('label', {}, 'Tónica del lick (nota en la que está escrito)'), select(Array.from({ length: 12 }, (_, i) => ({ value: i, label: prettyNote(pcName(i, 'sharp')) })), 9, () => {}, { id: 'lick-root' })),
         button('Guardar lick', { variant: 'accent', onClick: saveCustom }),
-        h('p', { class: 'hint', id: 'lick-hint' }, 'Cada nota se escribe «cuerda:traste». La cuerda 1 es la más aguda. Se transpone en bloque, sin cambiar la digitación relativa.'),
+        h('p', { class: 'hint', id: 'lick-hint' }, 'Cada nota se escribe «cuerda:traste». La cuerda 1 es la más aguda. Añade «b» para un bend de un tono, «b½» medio tono, «b3» tono y medio, «br» bend y release, «pbr» pre-bend y release y «~» vibrato (p. ej. 2:8b 1:5 3:7br~). Se transpone en bloque, sin cambiar la digitación relativa.'),
       ),
     );
     renderLick(shown, shown.rootPc);
+    drawBoard(shown);
   }
 
   function saveCustom() {
