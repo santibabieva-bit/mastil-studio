@@ -428,6 +428,16 @@ details.syntax pre { font-family: var(--font-mono); font-size: 0.82rem; white-sp
 .anim-chord { font-family: var(--font-display, Georgia, serif); font-size: 2rem; text-align: center; min-height: 1.3em; transition: color .3s; }
 .anim-legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: .85rem; }
 .anim-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+/* Plan de tríadas: mapa de las 48 formas y reto de las 12 */
+.triad-heat { display: grid; grid-template-columns: 30px repeat(12, minmax(0, 1fr)); gap: 2px; font-size: 10px; align-items: center; }
+.triad-heat-head { text-align: center; font-weight: 700; }
+.triad-heat-sub { text-align: center; }
+.triad-heat-cell { min-height: 18px; border-radius: 3px; }
+.triad-twelve { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.triad-twelve-cell { border: 1px solid var(--line); border-radius: 8px; padding: 6px; text-align: center; font-weight: 700; font-size: .85rem; color: #8a8272; transition: background .25s, color .25s; }
+.triad-twelve-cell.is-found { background: var(--green, #2f8a57); color: #fff; border-color: transparent; }
+.ex-item.is-done { opacity: .65; }
+
 /* Partitura de las tríadas: borrosa en el modo de memoria */
 .triad-score { transition: filter .3s; }
 .triad-score.is-hidden { filter: blur(7px); }

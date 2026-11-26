@@ -427,7 +427,7 @@ export function createPlayer(board, engine, { onStep = null, onEnd = null } = {}
     // Una misma posición puede salir en varias capas: gana la última (nota actual).
     const byKey = new Map(items.map((it) => [it.key, it]));
     board.dots([...byKey.values()]);
-    if (!masked(i)) for (const n of st.notes) board.pulse(n.s, n.f, opts.colorOf?.(n, i) ?? COLORS.accent);
+    if (!masked(i)) for (const n of st.notes.filter((x) => !x.held)) board.pulse(n.s, n.f, opts.colorOf?.(n, i) ?? COLORS.accent);
     if (opts.hand) board.hand(hands[i], { label: hands[i].shift ? `↔ Cambio de posición: trastes ${hands[i].from}–${hands[i].to}` : null });
     else board.hand(null);
     if (opts.fingers && st.notes.length) board.fingers(fingerLayout(st, hands[i]));

@@ -8,15 +8,18 @@ import { chordPcs } from '../lab/js/core/chords.js';
 import { makeRng, mod } from '../lab/js/core/music.js';
 import { morphKeys, dotStyle } from '../lab/js/ui/liveboard.js';
 import { beatsToAlphaTex } from '../lab/js/core/alphatex.js';
+import {
+  BASS_LINE, GROOVES, allForms, chromaticChords, dailyKey, dictationQuestion, judgeImprovNote, matchForm, parseSong, planDay, planDayIndex,
+} from '../lab/js/core/triadmore.js';
 
 const chordSteps = (steps) => steps.filter((s) => s.kind === 'chord');
 const pcsOk = (st) => {
-  const want = new Set(chordPcs(st.chord.rootPc, st.chord.typeId));
+  const want = new Set(st.chord.pcs ?? chordPcs(st.chord.rootPc, st.chord.typeId));
   return st.notes.every((n) => want.has(mod(n.midi, 12))) && new Set(st.notes.map((n) => mod(n.midi, 12))).size === 3;
 };
 
 test('hay al menos 15 ejercicios y todos los no interactivos generan acordes correctos', () => {
-  assert.ok(TRIAD_EXERCISES.length >= 15);
+  assert.ok(TRIAD_EXERCISES.length >= 31);
   for (const ex of TRIAD_EXERCISES) {
     if (ex.interactive) continue;
     for (const keyPc of [0, 7, 10]) {
@@ -208,4 +211,108 @@ test('grado en la escala: las notas de cada tríada según la tonalidad', () => 
   assert.equal(scaleDegree(68, 0, { rootPc: 0, typeId: 'aug' }), '♯5');
   assert.equal(scaleDegree(66, 0, { rootPc: 0, typeId: 'dim' }), '♭5');
   assert.equal(scaleDegree(63, 0, { rootPc: 0, typeId: 'm' }), '♭3');
+});
+
+test('nota pedal: la nota aguda no se mueve en ningún acorde', () => {
+  for (const pedal of [0, 4, 6]) {
+    const steps = buildTriadExercise('pedal', { keyPc: 7, pedal, set: 0 }).steps;
+    assert.ok(steps.length >= 5);
+    const tops = new Set(steps.map((s) => Math.max(...s.notes.map((n) => n.midi))));
+    assert.equal(tops.size, 1, `pedal ${pedal}`);
+  }
+});
+
+test('línea cromática: entre acordes solo una voz se mueve, un semitono', () => {
+  const { major, minor } = chromaticChords(0);
+  assert.deepEqual(major.map((c) => c.name), ['C', 'C+', 'C6', 'C7 (sin 5.ª)', 'F']);
+  assert.deepEqual(minor.map((c) => c.name).slice(0, 4), ['Am', 'Am(maj7)', 'Am7', 'Am6']);
+  const steps = buildTriadExercise('chromatic', { keyPc: 0, set: 1 }).steps;
+  for (let i = 1; i < 4; i += 1) {
+    const { moves } = voiceMoves(steps[i - 1], steps[i]);
+    assert.equal(moves.length, 1);
+    assert.equal(Math.abs(moves[0].semis), 1);
+  }
+});
+
+test('mano quieta: toda la progresión cabe en cuatro trastes', () => {
+  const steps = buildTriadExercise('hand', { keyPc: 2, progression: 'I-vi-IV-V', set: 'all' }).steps;
+  assert.equal(steps.length, 8);
+  const frets = steps.flatMap((s) => s.notes.map((n) => n.f));
+  assert.ok(Math.max(...frets) - Math.min(...frets) <= 3);
+});
+
+test('bajo descendente: la nota grave baja por la escala hasta el ii', () => {
+  const steps = buildTriadExercise('bassline', { keyPc: 0, set: 2 }).steps;
+  assert.equal(steps.length, BASS_LINE.length);
+  const bass = steps.map((s) => Math.min(...s.notes.map((n) => n.midi)));
+  for (let i = 1; i < 7; i += 1) assert.ok(bass[i] < bass[i - 1], `paso ${i}`);
+  assert.deepEqual(steps.slice(0, 4).map((s) => s.chord.name), ['C', 'G/B', 'Am', 'C/G']);
+});
+
+test('armonía: estructuras superiores con bajo, préstamo y dominantes con nombres correctos', () => {
+  const up = buildTriadExercise('upper', { keyPc: 0, set: 0 }).steps;
+  assert.ok(up.every((s) => s.bass === 36));
+  assert.ok(up.some((s) => s.chord.name === 'B♭/C') && up.some((s) => s.chord.name === 'E♭/C'));
+  const bor = buildTriadExercise('borrowed', { keyPc: 0, set: 1 }).steps;
+  assert.ok(bor.some((s) => s.chord.name === 'A♭' && s.chord.outside));
+  const sec = buildTriadExercise('secondary', { keyPc: 0, set: 1 }).steps;
+  assert.ok(sec.some((s) => s.chord.roman === 'V/ii' && s.chord.name === 'A'));
+  const sus = buildTriadExercise('sus', { keyPc: 0, set: 0 }).steps;
+  assert.equal(sus[1].chord.name, 'Csus4');
+  assert.equal(voiceMoves(sus[0], sus[1]).moves.length, 1);
+});
+
+test('ritmos: cada compás dura 4 pulsos y los silencios no suenan ni se escriben', () => {
+  for (const g of Object.keys(GROOVES)) {
+    const steps = buildTriadExercise('rhythm', { keyPc: 0, groove: g, progression: 'I-V-vi-IV' }).steps;
+    assert.equal(steps.reduce((a, s) => a + s.d, 0), 32, g);
+    const { beats } = stepsToBeats(steps);
+    const rests = steps.filter((s) => s.kind === 'rest');
+    if (rests.length) assert.ok(beats.some((b) => !b.notes.length));
+  }
+});
+
+test('adornos: slide, hammer-on desde la sus4 y 6.ª; la tab marca ligados y slides', () => {
+  const steps = buildTriadExercise('ornaments', { keyPc: 0, progression: 'I-IV-V', set: 0 }).steps;
+  assert.equal(steps.reduce((a, s) => a + s.d, 0) % 4, 0);
+  assert.ok(steps.some((s) => s.notes.some((n) => n.art === 'H')));
+  const { beats } = stepsToBeats(steps);
+  assert.ok(beats.some((b) => b.notes.some((n) => n.tech?.includes('/'))));
+  assert.ok(beats.some((b) => b.notes.some((n) => n.tech?.includes('h'))));
+  assert.match(beatsToAlphaTex(beats, { duration: 4 }), /\{h\}|\{sl\}/);
+});
+
+test('canción, tonalidad del día, dictado, 12 formas e improvisación', () => {
+  assert.deepEqual(parseSong('C G/B Am7 | Fmaj7 xx G7').map((c) => c.name), ['C', 'G', 'Am', 'F', 'G']);
+  const song = buildTriadExercise('song', { song: 'D A Bm G', set: 1 }).steps;
+  assert.equal(song.length, 4);
+  const k = dailyKey(new Date(2026, 10, 26));
+  assert.notEqual(dailyKey(new Date(2026, 10, 27)), k);
+  const d = dictationQuestion(0, makeRng(4));
+  assert.equal(d.steps.length, 4);
+  assert.equal(d.degrees[0], 0);
+  const forms = allForms({ rootPc: 0, typeId: 'maj' });
+  assert.equal(forms.length, 12);
+  assert.ok(forms.every((f) => f.answers.length > 0));
+  const marks = forms[5].answers[0].notes.map((n) => ({ s: n.s, f: n.f }));
+  assert.equal(matchForm(marks, forms), 5);
+  assert.equal(matchForm(marks, forms, new Set([5])), -1);
+  assert.equal(judgeImprovNote(64, { rootPc: 0, typeId: 'maj' }, 0), 'chord');
+  assert.equal(judgeImprovNote(62, { rootPc: 0, typeId: 'maj' }, 0), 'scale');
+  assert.equal(judgeImprovNote(61, { rootPc: 0, typeId: 'maj' }, 0), 'out');
+});
+
+test('plan intensivo: 28 días, cinco bloques de 20–25 minutos, ejercicios que existen', () => {
+  const ids = new Set(TRIAD_EXERCISES.map((x) => x.id));
+  const used = new Set();
+  for (let d = 0; d < 28; d += 1) {
+    const day = planDay(d);
+    assert.equal(day.week, Math.floor(d / 7) + 1);
+    assert.equal(day.blocks.length, 5);
+    const mins = day.blocks.reduce((a, b) => a + b.minutes, 0);
+    assert.ok(mins >= 20 && mins <= 26, `día ${d}: ${mins} min`);
+    for (const b of day.blocks) { assert.ok(ids.has(b.ex), b.ex); used.add(b.ex); }
+  }
+  assert.ok(used.size >= 25, `${used.size} ejercicios usados`);
+  assert.equal(planDayIndex('2026-11-20', new Date(2026, 10, 26)), 6);
 });

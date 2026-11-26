@@ -9,7 +9,11 @@
  */
 
 import { mod, pcName } from './music.js';
-import { CHORD_TYPES, chordPcs } from './chords.js';
+import { CHORD_TYPES, chordPcs, stringSetVoicings } from './chords.js';
+import {
+  bassLine, borrowedRun, chromaticLine, dailyScale, handStill, improvBacking, ornaments, pedalTop, rhythmGroove,
+  secondaryRun, songTriads, susResolve, upperStructures,
+} from './triadmore.js';
 import { cagedShapes } from './exlib.js';
 import {
   INVERSION_LABELS, movementBetween, stringSetLabel, stringSets, voicingsOnSet,
@@ -23,7 +27,7 @@ export const QUALITY_LABEL = { maj: 'mayor', m: 'menor', dim: 'disminuida', aug:
 export const SETS = stringSets(STD, 3);
 export const setName = (i) => SETS[i].map((s) => s + 1).join('');
 
-const MAJOR = [0, 2, 4, 5, 7, 9, 11];
+export const MAJOR = [0, 2, 4, 5, 7, 9, 11];
 const DIATONIC_TYPES = ['maj', 'm', 'm', 'maj', 'maj', 'm', 'dim'];
 const ROMAN = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
 const FLAT_KEYS = new Set([5, 10, 3, 8, 1, 6]);
@@ -109,8 +113,12 @@ export function chordStep(v, chord, d = 2, extra = {}) {
 
 const note = (s, f, extra = {}) => ({ s, f, midi: STD[s] + f, ...extra });
 
-function candidates(chord, setIdx, { win = null, inversion = null, open = false } = {}) {
-  let list = voicingsOnSet({ tuning: STD, rootPc: chord.rootPc, typeId: chord.typeId, set: SETS[setIdx], inversion, maxFret: MAX_FRET });
+export function candidates(chord, setIdx, { win = null, inversion = null, open = false } = {}) {
+  // Acordes «libres» (chord.pcs): cualquier grupo de tres notas, con la inversión según el bajo.
+  let list = chord.pcs
+    ? stringSetVoicings({ tuning: STD, pcs: chord.pcs, rootPc: chord.rootPc, maxFret: MAX_FRET, maxSpan: 4 })
+      .filter((v) => v.strings[0] === SETS[setIdx][0] && (inversion == null || v.inversion === inversion) && !(v.notes.some((n) => n.f === 0) && v.high > 5))
+    : voicingsOnSet({ tuning: STD, rootPc: chord.rootPc, typeId: chord.typeId, set: SETS[setIdx], inversion, maxFret: MAX_FRET });
   if (win) list = list.filter((v) => v.notes.every((n) => n.f >= win.from - 1 && n.f <= win.to + 1) && v.notes.some((n) => n.f >= win.from && n.f <= win.to));
   if (open) return list;
   // Formas móviles (sin cuerdas al aire), salvo que no quede otra.
@@ -177,8 +185,8 @@ export function cagedWindows(rootPc, maxFret = MAX_FRET) {
 }
 
 const nearest = (list, center) => list.reduce((best, v) => (!best || Math.abs(avgFret(v) - center) < Math.abs(avgFret(best) - center) ? v : best), null);
-const there = (list) => [...list, ...list.slice(0, -1).reverse()];
-const setsOf = (set) => (set === 'all' || set == null ? [3, 2, 1, 0] : [Number(set)]);
+export const there = (list) => [...list, ...list.slice(0, -1).reverse()];
+export const setsOf = (set) => (set === 'all' || set == null ? [3, 2, 1, 0] : [Number(set)]);
 const qualitiesOf = (q) => (q === 'all' ? QUALITIES : [q ?? 'maj']);
 
 /* ───────────── los ejercicios ───────────── */
@@ -248,7 +256,7 @@ function scaleHorizontal(p) {
   return steps;
 }
 
-function scaleVertical(p) {
+export function scaleVertical(p) {
   const chords = diatonic(p.keyPc);
   const steps = [];
   const wins = cagedWindows(p.keyPc).filter((w) => p.shape === 'all' || w.id === p.shape);
@@ -265,7 +273,7 @@ function scaleVertical(p) {
   return steps;
 }
 
-function progressionChords(p) {
+export function progressionChords(p) {
   const prog = PROGRESSIONS.find((x) => x.id === p.progression) ?? PROGRESSIONS[0];
   const dia = diatonic(p.keyPc);
   // El blues usa I, IV y V mayores (ya lo son en la tonalidad mayor).
@@ -490,7 +498,7 @@ export const TRIAD_EXERCISES = [
   { id: 'prog-sets', family: 'key', title: 'Una progresión en cuatro sitios', run: progSets, params: ['key', 'progression', 'set'], defaults: { progression: 'I-V-vi-IV', set: 'all' },
     desc: 'La misma progresión en 456, 345, 234 y 123, cada vez con el mínimo movimiento.',
     tip: 'Graba una pasada en cada grupo de cuerdas y compáralas: el carácter cambia aunque los acordes sean los mismos.' },
-  { id: 'passing', family: 'melodic', title: 'Inversiones unidas con notas de paso', run: passingTones, params: ['key', 'degree', 'set'], defaults: { degree: 0, set: 0 },
+  { id: 'passing', family: 'voice', title: 'Inversiones unidas con notas de paso', run: passingTones, params: ['key', 'degree', 'set'], defaults: { degree: 0, set: 0 },
     desc: 'Las inversiones de un acorde de la tonalidad, subiendo y bajando, unidas por las notas de la escala en la voz aguda. Es el lenguaje del soul y el R&B.',
     tip: 'Toca el acorde con púa o dedos y las notas de paso ligadas (hammer-on / pull-off).' },
   { id: 'cycle4', family: 'melodic', title: 'Ciclo de cuartas', run: cycleFourths, params: ['key', 'quality', 'set'], defaults: { quality: 'maj', set: 1 },
@@ -508,6 +516,54 @@ export const TRIAD_EXERCISES = [
   { id: 'linear', family: 'melodic', title: 'Tríada en dos cuerdas', run: linearTwoStrings, params: ['root', 'quality', 'set'], defaults: { quality: 'maj', set: 0 },
     desc: 'El arpegio del acorde a lo largo de las dos cuerdas agudas del grupo, de la cejuela al traste 15 y vuelta.',
     tip: 'Une las posiciones del mástil en horizontal: es la manera de dejar de tocar siempre «en la caja».' },
+  { id: 'daily', family: 'key', title: 'Una tonalidad al día', run: dailyScale, params: [], defaults: {},
+    desc: 'Cada día una tonalidad del círculo de quintas: sus siete tríadas en las cinco posiciones CAGED, en serpiente. En doce días has recorrido todas.',
+    tip: 'Antes de pulsar reproducir, di en voz alta los siete acordes de la tonalidad de hoy.' },
+  { id: 'pedal', family: 'voice', title: 'Nota pedal arriba', run: pedalTop, params: ['key', 'pedal', 'set'], defaults: { pedal: 0, set: 0 },
+    desc: 'La nota aguda se queda quieta y por debajo cambian los acordes de la tonalidad que la contienen (en Do, con el Do arriba: C → F → Am → F → C).',
+    tip: 'Deja el dedo de la nota aguda clavado: solo se mueven los de abajo.' },
+  { id: 'chromatic', family: 'voice', title: 'Línea cromática interior', run: chromaticLine, params: ['key', 'set'], defaults: { set: 1 },
+    desc: 'Una voz se mueve por semitonos y las otras dos se quedan: C → C+ → C6 → C7 → F y el «line cliché» Am → Am(maj7) → Am7 → Am6.',
+    tip: 'Sigue con los ojos la flecha: es siempre la misma voz, un traste cada vez. Cántala.' },
+  { id: 'hand', family: 'voice', title: 'Progresión sin mover la mano', run: handStill, params: ['key', 'progression', 'set'], defaults: { progression: 'I-V-vi-IV', set: 'all' },
+    desc: 'La progresión entera dentro de cuatro trastes, cambiando de grupo de cuerdas en lugar de desplazar la mano. La zona azul es tu mano.',
+    tip: 'Si tu mano sale de la zona azul, has elegido otra inversión: vuelve a la del dibujo.' },
+  { id: 'bassline', family: 'voice', title: 'Bajo descendente con inversiones', run: bassLine, params: ['key', 'set'], defaults: { set: 2 },
+    desc: 'I – V/7 – vi – I/5 – IV – I/3 – ii – V – I: las inversiones hacen que el bajo baje por la escala, como en tantas baladas.',
+    tip: 'Toca un poco más fuerte la nota grave: es la melodía del bajo.' },
+  { id: 'upper', family: 'harmony', title: 'Tríadas sobre un bajo', run: upperStructures, params: ['key', 'set'], defaults: { set: 0 },
+    desc: 'Con el bajo fijo en la tónica, cada tríada de arriba crea otro acorde: II sobre I es lidio, ♭VII sobre I es 9sus4, VI sobre I es un dominante tenso…',
+    tip: 'Escucha cada una sobre el bajo antes de pasar a la siguiente. Son los colores del jazz y el neo-soul con solo tres notas.' },
+  { id: 'borrowed', family: 'harmony', title: 'Préstamo modal', run: borrowedRun, params: ['key', 'set'], defaults: { set: 1 },
+    desc: 'Progresiones con acordes del modo menor: I – ♭VI – ♭VII – I, I – iv – I, IV – iv – I, I – ♭III – IV – I y I – ♭VII – IV – I.',
+    tip: 'Fíjate en qué nota baja un semitono respecto al acorde de la tonalidad: es la que trae el color menor.' },
+  { id: 'secondary', family: 'harmony', title: 'Dominantes secundarios', run: secondaryRun, params: ['key', 'set'], defaults: { set: 1 },
+    desc: 'I – VI – ii – V – I, I – III – vi – IV – V, I – II – V – I y I – VII – iii – IV – I: el acorde de fuera es el V del siguiente.',
+    tip: 'La 3.ª del dominante secundario es la sensible del acorde al que va: síguela con la flecha.' },
+  { id: 'sus', family: 'harmony', title: 'Suspender y resolver', run: susResolve, params: ['key', 'set'], defaults: { set: 0 },
+    desc: 'X → Xsus4 → X → Xsus2 → X en I, IV, V y vi: la 3.ª sube a la 4.ª o baja a la 2.ª y vuelve.',
+    tip: 'Prueba a hacerlo con hammer-on y pull-off, sin volver a atacar las otras dos notas.' },
+  { id: 'song', family: 'harmony', title: 'Las tríadas de tu canción', run: songTriads, params: ['song', 'set'], defaults: { set: 1, song: 'C G Am F | C G F F' },
+    desc: 'Escribe un cifrado (C G/B Am7 F…) y la app lo convierte en tríadas con la conducción de voces más corta en el grupo de cuerdas que elijas.',
+    tip: 'Los acordes con 7.ª o 9.ª se reducen a su tríada: es como se tocan en una segunda guitarra.' },
+  { id: 'rhythm', family: 'style', title: 'Ritmos con tríadas', run: rhythmGroove, params: ['key', 'groove', 'progression'], defaults: { groove: 'reggae', progression: 'I-V-vi-IV' },
+    desc: 'La misma progresión con cuatro ritmos: reggae en el contratiempo, funk de semicorcheas en las cuerdas agudas, Motown en el 2 y el 4, y country con bajo alterno.',
+    tip: 'Apaga el acorde levantando un poco la mano izquierda justo después de cada golpe: el silencio es parte del ritmo.' },
+  { id: 'ornaments', family: 'style', title: 'Tríadas con adornos', run: ornaments, params: ['key', 'progression', 'set'], defaults: { progression: 'I-IV-V', set: 0 },
+    desc: 'Cada acorde con tres adornos clásicos del soul y el country: entrada deslizando desde un traste abajo, hammer-on desde la sus4 y la 6.ª añadida.',
+    tip: 'Los adornos se tocan con la mano izquierda: ataca una vez y deja que los ligados suenen solos.' },
+  { id: 'improv', family: 'game', title: 'Improvisa con las notas del acorde', run: improvBacking, params: ['key', 'progression'], defaults: { progression: 'I-V-vi-IV' },
+    desc: 'Suena la base y el mástil enseña las notas de cada acorde. Toca con el micrófono o MIDI: puntúa cuántas notas caen en el acorde.',
+    tip: 'Empieza solo con R, 3 y 5; luego activa las notas de paso y une los acordes por la escala.' },
+  { id: 'tempo', family: 'game', title: 'Reacción a tempo', interactive: 'tempo', params: ['set'], defaults: { set: 'all' },
+    desc: 'Un acorde, una inversión y un grupo de cuerdas por compás, con metrónomo. Marca las tres notas antes de que acabe el compás: si aciertas tres seguidas, el tempo sube.',
+    tip: 'No busques la nota: piensa en la forma. Es la prueba de que la tienes automatizada.' },
+  { id: 'twelve', family: 'game', title: 'Las 12 formas en 60 segundos', interactive: 'twelve', params: ['quality'], defaults: { quality: 'maj' },
+    desc: 'Un acorde al azar: encuentra sus 12 formas (3 inversiones × 4 grupos de cuerdas) en un minuto. Se guarda tu récord.',
+    tip: 'Hazlo por orden: las tres inversiones de un grupo y luego el siguiente. Así no te dejas ninguna.' },
+  { id: 'dictation', family: 'game', title: 'Dictado de progresiones', interactive: 'dictation', params: ['key'], defaults: {},
+    desc: 'Suenan cuatro acordes de la tonalidad (el primero es I). Escribe los otros tres en números romanos; al comprobar, la progresión se anima en el mástil.',
+    tip: 'Fíjate en el bajo: si baja un tono desde la tónica suele ser vi o V; si sube una 4.ª, IV.' },
   { id: 'drill', family: 'game', title: 'Prueba de reacción', interactive: 'drill', params: ['set'], defaults: { set: 'all' },
     desc: 'La app pide un acorde, una inversión y un grupo de cuerdas; tú marcas las tres notas en el mástil. Lo que te cuesta vuelve antes.',
     tip: 'Antes de pulsar, piensa qué nota va arriba. El cronómetro premia la respuesta segura.' },
@@ -519,8 +575,11 @@ export const TRIAD_EXERCISES = [
 export const TRIAD_FAMILIES = [
   { id: 'shapes', label: 'Formas e inversiones' },
   { id: 'key', label: 'En la tonalidad' },
+  { id: 'voice', label: 'Conducción de voces' },
+  { id: 'harmony', label: 'Armonía' },
   { id: 'melodic', label: 'Melodía y movimiento' },
-  { id: 'game', label: 'Retos' },
+  { id: 'style', label: 'Ritmo y estilo' },
+  { id: 'game', label: 'Velocidad, oído e improvisación' },
 ];
 
 export const triadExercise = (id) => TRIAD_EXERCISES.find((x) => x.id === id) ?? TRIAD_EXERCISES[0];
@@ -578,7 +637,7 @@ export function assignVoices(steps) {
       last = out;
       return out;
     }
-    if (st.kind === 'pass' && last) {
+    if ((st.kind === 'pass' || st.kind === 'rest' || st.kind === 'orn') && last) {
       return {
         ...st,
         notes: st.notes.map((n) => {
@@ -623,13 +682,18 @@ export function stepsToBeats(steps, { barBeats = 4 } = {}) {
   for (const st of steps) {
     firstBeat.push(beats.length);
     const notes = st.notes.filter((n) => !n.held).map((n) => ({ s: n.s, f: n.f }));
+    // Ligados y slides: la marca va en la nota de origen (la del beat anterior, misma cuerda).
+    for (const n of st.notes.filter((x) => !x.held && x.art)) {
+      const prev = beats[beats.length - 1]?.notes.find((m) => m.s === n.s);
+      if (prev) prev.tech = [...(prev.tech ?? []), n.art === 'S' ? '/' : 'h'];
+    }
     const name = st.kind === 'chord' ? st.chord?.name : null;
     const chord = name && name !== prevChord ? name : null;
     if (name) prevChord = name;
     const d = st.d ?? 1;
     // Tresillos de corchea: un tercio de pulso.
     if (Math.abs(d * 3 - Math.round(d * 3)) < 1e-6 && Math.round(d * 3) % 3 !== 0 && Math.abs(d - 0.5) > 1e-6 && d < 1) {
-      beats.push({ notes, dur: 8, tuplet: true, chord });
+      beats.push({ notes: notes.map((n) => ({ ...n, tech: [] })), dur: 8, tuplet: true, chord });
       pos = (pos + 16) % barTicks;
       continue;
     }
@@ -640,7 +704,7 @@ export function stepsToBeats(steps, { barBeats = 4 } = {}) {
       let chunk = Math.min(left, room);
       const [t, dur] = NOTE_VALUES.find(([tk]) => tk <= chunk) ?? [12, 16];
       chunk = t;
-      beats.push({ notes: notes.map((n) => ({ ...n, tie: !first })), dur, chord: first ? chord : null });
+      beats.push({ notes: notes.map((n) => ({ ...n, tie: !first, tech: [] })), dur, chord: first ? chord : null });
       first = false;
       left -= chunk;
       pos = (pos + chunk) % barTicks;
@@ -651,7 +715,8 @@ export function stepsToBeats(steps, { barBeats = 4 } = {}) {
 
 /** Descripción corta de un paso de acorde: «Cm · 1.ª inversión · cuerdas 234». */
 export function describeStep(st) {
-  if (st.kind !== 'chord') return st.chord?.name ?? '';
+  if (st.kind === 'improv') return `Improvisa sobre ${st.chord.name}: busca R, 3 y 5`;
+  if (st.kind !== 'chord') return `${st.chord?.name ?? ''}${st.label ? ` · ${st.label}` : ''}`;
   const strings = st.notes.map((n) => n.s + 1).sort((x, y) => x - y).join('');
   return `${st.chord.roman ? `${st.chord.roman} · ` : ''}${st.chord.name} · ${INVERSION_LABELS[st.inv] ?? ''} · cuerdas ${strings}${st.label ? ` · ${st.label}` : ''}`;
 }

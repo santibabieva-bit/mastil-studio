@@ -1,8 +1,8 @@
 /**
- * Tríadas en movimiento: quince ejercicios de tríadas (inversiones en
- * horizontal y vertical, escala armonizada por posición CAGED, progresiones,
- * notas de paso, ciclo de cuartas, chord melody, abiertas, pares, retos de
- * reacción y de oído) con el mástil animado, tablatura que sigue y sonido.
+ * Tríadas en movimiento: más de 30 ejercicios de tríadas (formas, tonalidad,
+ * conducción de voces, armonía, melodía, ritmo, velocidad, oído e
+ * improvisación) con el mástil animado, partitura de alphaTab y sonido, y un
+ * plan intensivo de 4 semanas con el mapa de las 48 formas.
  */
 
 import { ROOT_CHOICES, parseRoot, prettyNote } from '../core/music.js';
@@ -13,6 +13,11 @@ import {
   recordDrill, scaleDegree, setName, stepsToBeats, triadExercise, voiceMoves,
 } from '../core/triadex.js';
 import { beatsToAlphaTex } from '../core/alphatex.js';
+import {
+  GROOVES, dailyKey, planDay, planDayIndex,
+} from '../core/triadmore.js';
+import { mod } from '../core/music.js';
+import { createTriadModes, triadHeatmap } from './triadmodes.js';
 import { COLORS, createAnimBoard, createPlayer, noteName } from '../ui/animboard.js';
 import { createScore, scoreToolbar } from '../ui/score.js';
 import {
@@ -36,6 +41,9 @@ function mount(root, ctx) {
     shape: saved.shape ?? null,
     progression: saved.progression ?? null,
     degree: saved.degree ?? null,
+    pedal: saved.pedal ?? null,
+    groove: saved.groove ?? null,
+    song: saved.song ?? null,
     beats: saved.beats ?? 2,
     bpm: saved.bpm ?? 70,
     style: saved.style ?? 'block',
@@ -97,6 +105,13 @@ function mount(root, ctx) {
     onEnd: () => { syncPlay(); if (st.memory) reveal(); },
   });
   ctx.onCleanup(() => player.stop());
+  const modes = createTriadModes({
+    ctx, engine, board, stage, bigName, caption, st, keyPc, TUNING,
+    showSteps: (raw, title, o) => useSteps(raw, title, o),
+    currentChord: () => (player.playing && steps[player.index]?.kind === 'improv' ? steps[player.index].chord : null),
+    redraw: () => { const s = steps[player.index]; if (s?.kind === 'improv') drawImprovMap(s.chord); },
+  });
+  ctx.onCleanup(() => modes.stop());
 
   /* ───── dibujo por paso ───── */
 
@@ -109,13 +124,16 @@ function mount(root, ctx) {
     hlBeat = firstBeat[i] ?? null;
     if (hlBeat != null) score.highlightBeat(hlBeat);
     if (s.chord) bigName.textContent = prettyNote(s.chord.name);
+    const sounding = s.notes.filter((n) => !n.held);
     caption.textContent = s.kind === 'chord' ? describeStep(s)
-      : s.kind === 'pass' ? `Nota de paso: ${noteName(s.notes[s.notes.length - 1].midi)} (de la escala)`
-        : `${s.chord?.name ?? ''} · ${noteName(s.notes[0].midi)}`;
-    if (s.shape) board.zones([{ from: s.shape.from, to: s.shape.to, color: CAGED_COLORS[s.shape.id], label: `Forma ${s.shape.id}`, alpha: 0.13 }]);
+      : s.kind === 'pass' ? `Nota de paso: ${noteName(sounding[sounding.length - 1].midi)} (de la escala)`
+        : s.kind === 'rest' || s.kind === 'orn' ? describeStep(s)
+          : `${s.chord?.name ?? ''} · ${sounding[0] ? noteName(sounding[0].midi) : ''}`;
+    if (s.shape) board.zones([{ from: s.shape.from, to: s.shape.to, color: s.shape.color ?? CAGED_COLORS[s.shape.id], label: s.shape.label ?? `Forma ${s.shape.id}`, alpha: 0.13 }]);
     else board.zones([]);
     board.clearArrows();
     board.dots([], 'trail');
+    if (s.kind === 'improv') { caption.textContent = describeStep(s); drawImprovMap(s.chord); return; }
     if (st.arrows && s.kind === 'chord' && !st.memory) {
       const prev = lastChordBefore(i);
       const { moves, common } = voiceMoves(prev, s);
@@ -144,7 +162,7 @@ function mount(root, ctx) {
       if (s.kind === 'chord') {
         if (st.style === 'strum') { out.strum = s.notes.map((n) => n.midi); out.silent = true; }
         if (st.style === 'arp') out.arp = true;
-        if (st.bass) out.bass = 36 + ((s.chord.rootPc - 0 + 12) % 12);
+        if (st.bass && out.bass == null) out.bass = 36 + ((s.chord.rootPc - 0 + 12) % 12);
       }
       return out;
     });
@@ -153,6 +171,10 @@ function mount(root, ctx) {
   function load() {
     const ex = triadExercise(st.ex);
     player.stop();
+    // Lo que el reproductor dejó programado no debe pintar sobre el ejercicio nuevo.
+    engine.clearQueue?.();
+    modes.stop();
+    drill = null;
     board.clear();
     board.zones([]);
     clear(stage);
@@ -161,21 +183,37 @@ function mount(root, ctx) {
       scoreBox.hidden = true;
       transport.hidden = true;
       if (ex.interactive === 'drill') startDrill();
-      else startEar();
+      else if (ex.interactive === 'ear') startEar();
+      else modes.start(ex.interactive);
       return;
     }
-    scoreBox.hidden = false;
     transport.hidden = false;
     const { steps: raw } = buildTriadExercise(st.ex, {
       keyPc: keyPc(), rootPc: keyPc(), quality: st.quality, set: st.set, inversion: st.inversion, shape: st.shape,
-      progression: st.progression, degree: st.degree, beats: st.beats,
+      progression: st.progression, degree: st.degree, beats: st.beats, pedal: st.pedal, groove: st.groove, song: st.song,
     });
+    if (st.ex === 'improv') {
+      // Sin partitura: suena la base y el mástil enseña las notas de cada acorde.
+      steps = raw;
+      scoreBox.hidden = true;
+      modes.start('improv');
+      player.load(steps, { labels: labelOf, click: st.click });
+      player.show(0);
+      return;
+    }
+    useSteps(raw, ex.title);
+  }
+
+  /** Carga unos pasos en el mástil, la partitura y el reproductor. */
+  function useSteps(raw, title, { autoplay = false } = {}) {
+    scoreBox.hidden = false;
     steps = decorate(raw);
     if (!steps.length) {
       caption.textContent = 'No hay formas cómodas con estos ajustes: prueba otro grupo de cuerdas o posición.';
       scoreBox.hidden = true;
       return;
     }
+    const ex = { title };
     const conv = stepsToBeats(steps);
     firstBeat = conv.firstBeat;
     score.load(beatsToAlphaTex(conv.beats, {
@@ -188,13 +226,31 @@ function mount(root, ctx) {
     scoreHost.classList.toggle('is-hidden', st.memory);
     player.load(steps, {
       next: st.next && !st.memory,
-      keyOf: (n, j, i) => (steps[i].kind === 'pass' || steps[i].kind === 'chord' ? `v-${n.voice ?? j}` : `a-${n.s}-${n.f}`),
+      keyOf: (n, j, i) => (n.voice != null && steps[i].kind !== 'arp' ? `v-${n.voice}` : `a-${n.s}-${n.f}`),
       labels: labelOf,
       colorOf: (n) => (n.held ? '#b9ad95' : ROLE_COLOR[n.role] ?? COLORS.accent),
       click: st.click,
       mask: st.memory ? steps.map((_, i) => i === 0) : null,
     });
     player.show(0);
+    if (autoplay) player.play({ tempo: st.bpm, countIn: 0 }).then(syncPlay);
+  }
+
+  /** Improvisación: las notas del acorde por todo el mástil (y la escala, si se cuentan las de paso). */
+  function drawImprovMap(chord) {
+    const tones = new Map([[chord.rootPc, 'root'], [mod(chord.rootPc + (chord.typeId === 'm' || chord.typeId === 'dim' ? 3 : 4), 12), 'third'], [mod(chord.rootPc + (chord.typeId === 'dim' ? 6 : chord.typeId === 'aug' ? 8 : 7), 12), 'fifth']]);
+    const scale = new Set(diatonic(keyPc()).map((c) => c.rootPc));
+    const items = [];
+    for (let s = 0; s < 6; s += 1) {
+      for (let f = 0; f <= 15; f += 1) {
+        const pc = mod(TUNING[s] + f, 12);
+        const role = tones.get(pc);
+        if (role) items.push({ key: `im-${s}-${f}`, s, f, label: ROLE_LABEL[role], fill: ROLE_COLOR[role], alpha: 0.9, scale: 0.85 });
+        else if (modes.passing() && scale.has(pc)) items.push({ key: `im-${s}-${f}`, s, f, label: '', fill: COLORS.ghost, alpha: 0.6, scale: 0.5 });
+      }
+    }
+    board.dots(items, 'trail');
+    bigName.textContent = prettyNote(chord.name);
   }
 
   function reveal() {
@@ -331,6 +387,7 @@ function mount(root, ctx) {
   }
 
   board.onClick((hit) => {
+    if (modes.onClick(hit)) return;
     if (drill && !drill.done && triadExercise(st.ex).interactive === 'drill') {
       const k = drill.marks.findIndex((m) => m.s === hit.s && m.f === hit.f);
       if (k >= 0) drill.marks.splice(k, 1);
@@ -353,22 +410,29 @@ function mount(root, ctx) {
 
   function drawList() {
     clear(listBox);
+    let n = 0;
     for (const fam of TRIAD_FAMILIES) {
       listBox.append(h('div', { class: 'kicker', style: 'margin-top:6px' }, fam.label));
       TRIAD_EXERCISES.filter((x) => x.family === fam.id).forEach((x) => {
-        const n = TRIAD_EXERCISES.indexOf(x) + 1;
+        n += 1;
         const b = h('button', { type: 'button', class: `ex-item ${x.id === st.ex ? 'is-active' : ''}`, role: 'option', 'aria-selected': String(x.id === st.ex) }, `${n}. ${x.title}`);
         b.addEventListener('click', () => {
           st.ex = x.id;
           // Cada ejercicio arranca con sus propios valores por defecto.
-          Object.assign(st, { quality: null, set: null, inversion: null, shape: null, progression: null, degree: null });
-          save();
-          ctx.setParams({ ex: x.id });
-          refresh();
+          openExercise(x.id);
         });
         listBox.append(b);
       });
     }
+  }
+
+  function openExercise(id, params = {}) {
+    st.ex = id;
+    // Cada ejercicio arranca con sus propios valores por defecto (o los del plan).
+    Object.assign(st, { quality: null, set: null, inversion: null, shape: null, progression: null, degree: null, pedal: null, groove: null }, params);
+    save();
+    ctx.setParams({ ex: id });
+    refresh();
   }
 
   function val(name) {
@@ -392,7 +456,7 @@ function mount(root, ctx) {
     }
     if (ps.has('set')) {
       const opts = SETS.map((_, i) => ({ value: String(i), label: `Cuerdas ${setName(i)}` }));
-      if (['inv-h', 'quality', 'scale-h', 'prog-caged', 'prog-sets', 'passing', 'drill'].includes(st.ex)) opts.push({ value: 'all', label: 'Todos los grupos' });
+      if (['inv-h', 'quality', 'scale-h', 'prog-caged', 'prog-sets', 'passing', 'drill', 'tempo', 'hand', 'pedal', 'chromatic', 'bassline', 'sus', 'song'].includes(st.ex)) opts.push({ value: 'all', label: 'Todos los grupos' });
       paramBox.append(f('Grupo de cuerdas', select(opts, String(val('set')), (v) => set('set')(v === 'all' ? 'all' : Number(v)))));
     }
     if (ps.has('inversion')) {
@@ -410,11 +474,22 @@ function mount(root, ctx) {
       paramBox.append(f('Posición CAGED', select(opts, val('shape'), set('shape'))));
     }
     if (ps.has('progression')) paramBox.append(f('Progresión', select(PROGRESSIONS.map((p) => ({ value: p.id, label: p.label })), val('progression'), set('progression'))));
+    if (ps.has('pedal')) {
+      const dia = diatonic(keyPc());
+      paramBox.append(f('Nota fija arriba', select(dia.map((c, i) => ({ value: String(i), label: `${i + 1} · ${prettyNote(c.name.replace(/m$|dim$/, ''))}` })), String(val('pedal')), (v) => set('pedal')(Number(v)))));
+    }
+    if (ps.has('groove')) paramBox.append(f('Ritmo', select(Object.entries(GROOVES).map(([id, g]) => ({ value: id, label: g.label })), val('groove'), set('groove'))));
+    if (ps.has('song')) {
+      const area = h('textarea', { rows: 3, style: 'width:100%;font-family:inherit', 'aria-label': 'Cifrado' });
+      area.value = val('song');
+      paramBox.append(f('Cifrado de la canción', area), button('Armonizar con tríadas', { variant: 'accent', onClick: () => set('song')(area.value) }));
+    }
+    if (st.ex === 'daily') paramBox.append(h('p', { class: 'feedback ok' }, `Tonalidad de hoy: ${prettyNote(diatonic(dailyKey())[0].name)} mayor. Mañana toca la siguiente del círculo de quintas.`));
     if (ps.has('degree')) {
       const dia = diatonic(keyPc());
       paramBox.append(f('Acorde de la tonalidad', select(dia.map((c, i) => ({ value: String(i), label: `${c.roman} · ${prettyNote(c.name)}` })), String(val('degree')), (v) => set('degree')(Number(v)))));
     }
-    if (!ex.interactive && !['pairs', 'linear', 'passing'].includes(st.ex)) {
+    if (!ex.interactive && !['pairs', 'linear', 'passing', 'rhythm', 'ornaments', 'improv', 'upper'].includes(st.ex)) {
       paramBox.append(f('Pulsos por acorde', segmented([1, 2, 4].map((b) => ({ value: String(b), label: String(b) })), String(st.beats), (v) => { st.beats = Number(v); save(); load(); })));
     }
   }
@@ -454,7 +529,60 @@ function mount(root, ctx) {
       memToggle,
     ));
 
+  /* ───── plan intensivo de 4 semanas ───── */
+
+  const planBox = h('div', { class: 'stack' });
+  const today = () => new Date().toISOString().slice(0, 10);
+  function drawPlan() {
+    clear(planBox);
+    const plan = ctx.storage.get('triad-plan', null);
+    planBox.append(h('h2', { style: 'margin:0' }, 'Plan intensivo · 4 semanas'));
+    if (!plan) {
+      planBox.append(
+        h('p', { class: 'hint' }, '20–25 minutos al día durante 28 días: calentamiento de reacción, foco del día, aplicación, oído y un reto. Cada semana tiene un tema (formas, tonalidad, conducción de voces, armonía y estilo) y la tonalidad, el grupo de cuerdas y la calidad cambian cada día.'),
+        button('Empezar el plan hoy', { variant: 'accent', onClick: () => { ctx.storage.set('triad-plan', { start: today(), done: {} }); drawPlan(); } }),
+      );
+    } else {
+      const idx = planDayIndex(plan.start);
+      if (idx > 27) {
+        planBox.append(h('p', { class: 'feedback ok' }, '¡Plan terminado! Repite las semanas que más te costaron o empieza otra vuelta.'));
+      } else {
+        const day = planDay(idx);
+        const doneToday = new Set(plan.done[idx] ?? []);
+        const daysDone = Object.values(plan.done).filter((l) => l.length >= day.blocks.length).length;
+        planBox.append(
+          h('p', { class: 'hint', style: 'margin:0' }, `Semana ${day.week} · día ${idx + 1} de 28 · ${day.theme}${day.review ? ' · repaso' : ''}`),
+          h('div', { class: 'progress' }, h('i', { style: `width:${(daysDone / 28) * 100}%` })),
+          h('p', { class: 'hint', style: 'margin:0' }, `Hoy: ${prettyNote(diatonic(day.params.keyPc)[0].name)} mayor · cuerdas ${setName(day.params.set)} · ${QUALITY_LABEL[day.params.quality]}`),
+          ...day.blocks.map((b, k) => {
+            const ex = triadExercise(b.ex);
+            const btn = h('button', { type: 'button', class: `ex-item ${doneToday.has(k) ? 'is-done' : ''}` }, `${doneToday.has(k) ? '✓' : `${k + 1}.`} ${b.title}: ${ex.title} · ${b.minutes} min`);
+            btn.addEventListener('click', () => {
+              const cur = ctx.storage.get('triad-plan', plan);
+              const list = new Set(cur.done[idx] ?? []);
+              list.add(k);
+              ctx.storage.set('triad-plan', { ...cur, done: { ...cur.done, [idx]: [...list] } });
+              st.key = pcKeyName(day.params.keyPc);
+              openExercise(b.ex, { set: ex.params.includes('set') ? day.params.set : null, quality: ex.params.includes('quality') && b.ex !== 'inv-h' ? day.params.quality : null, groove: ex.params.includes('groove') ? day.params.groove : null, progression: ex.params.includes('progression') ? day.params.progression : null });
+              drawPlan();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            return btn;
+          }),
+        );
+      }
+      planBox.append(button('Reiniciar el plan', { variant: 'ghost', onClick: () => { if (confirm('¿Empezar el plan de nuevo desde el día 1?')) { ctx.storage.set('triad-plan', { start: today(), done: {} }); drawPlan(); } } }));
+    }
+    planBox.append(
+      h('h2', { style: 'margin:8px 0 0' }, 'Tus 48 formas'),
+      h('p', { class: 'hint', style: 'margin:0' }, 'Calidad × inversión × grupo de cuerdas, según la prueba de reacción y la reacción a tempo. Verde: la dominas; rojo: fallas o tardas.'),
+      triadHeatmap(ctx.storage.get('triad-drill', {})),
+    );
+  }
+  const pcKeyName = (pc) => ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'][pc];
+
   function refresh() {
+    drawPlan();
     drawList();
     drawParams();
     load();
@@ -463,7 +591,7 @@ function mount(root, ctx) {
 
   drawLegend();
   root.append(
-    header('Aprender el mástil', 'Tríadas en movimiento', 'Quince ejercicios para dominar las tríadas: inversiones en horizontal y vertical en los cuatro grupos de cuerdas, la escala armonizada en cada posición CAGED, progresiones con la conducción de voces más corta, notas de paso, ciclo de cuartas, melodía en la voz aguda y retos. Todo se ve, se oye y se escribe en tablatura.'),
+    header('Aprender el mástil', 'Tríadas en movimiento', `${TRIAD_EXERCISES.length} ejercicios para dominar las tríadas: formas e inversiones en los cuatro grupos de cuerdas, la tonalidad en cada posición CAGED, conducción de voces, armonía (estructuras superiores, préstamo modal, dominantes secundarios), ritmos y adornos, velocidad, oído e improvisación, con un plan intensivo de 4 semanas. Todo se ve, se oye y se escribe en partitura y tablatura.`),
     h('div', { class: 'tool-grid tool-grid--rev' },
       h('div', { class: 'stack' },
         h('section', { class: 'panel stack' },
@@ -477,6 +605,7 @@ function mount(root, ctx) {
       ),
       h('div', { class: 'stack' },
         h('section', { class: 'panel stack' }, sideInfo, paramBox),
+        h('section', { class: 'panel stack' }, planBox),
         h('section', { class: 'panel stack' }, h('h2', { style: 'margin:0' }, 'Ejercicios'), listBox),
         h('section', { class: 'panel stack' }, optionsBox),
       ),
@@ -490,7 +619,7 @@ export default {
   title: 'Tríadas en movimiento',
   group: 'neck',
   icon: '🔺',
-  summary: '15 ejercicios de tríadas animados: inversiones, escala armonizada por CAGED, progresiones, notas de paso y retos, con tab y sonido.',
+  summary: '31 ejercicios de tríadas animados (formas, tonalidad, conducción de voces, armonía, ritmo, velocidad, oído e improvisación) y un plan intensivo de 4 semanas.',
   isNew: true,
   mount,
 };
